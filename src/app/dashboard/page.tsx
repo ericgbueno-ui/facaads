@@ -17,6 +17,22 @@ export default function DashboardPage() {
   const [funnel, setFunnel] = useState<any[]>([]);
   const [ranking, setRanking] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [projectName, setProjectName] = useState<string>("Projeto");
+
+  useEffect(() => {
+    // Carregar nome do projeto
+    const projectId = localStorage.getItem("selectedProject");
+    if (projectId) {
+      // Aqui você pode mapear o ID para o nome real
+      const projectNames: Record<string, string> = {
+        "meta-001": "Meta Ads - Campanha Principal",
+        "google-001": "Google Ads - Performance Max",
+        "tiktok-001": "TikTok Ads - E-commerce",
+        "shopee-001": "Shopee Ads - Seller Center",
+      };
+      setProjectName(projectNames[projectId] || "Projeto");
+    }
+  }, []);
 
   useEffect(() => {
     async function loadData() {
