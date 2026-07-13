@@ -20,18 +20,33 @@ export default function DashboardPage() {
   const [projectName, setProjectName] = useState<string>("Projeto");
 
   useEffect(() => {
-    // Carregar nome do projeto
-    const projectId = localStorage.getItem("selectedProject");
-    if (projectId) {
-      // Aqui você pode mapear o ID para o nome real
-      const projectNames: Record<string, string> = {
-        "meta-001": "Meta Ads - Campanha Principal",
-        "google-001": "Google Ads - Performance Max",
+    // Carregar nome do projeto com base no channel e account
+    const channel = localStorage.getItem("selectedChannel") || "UNKNOWN";
+    const accountId = localStorage.getItem("selectedAccount") || "unknown";
+
+    const accountNames: Record<string, Record<string, string>> = {
+      META: {
+        "meta-001": "Meta Ads - Conta Principal",
+        "meta-002": "Meta Ads - Conta Secundária",
+        "meta-003": "Meta Ads - Testes",
+      },
+      GOOGLE: {
+        "google-001": "Google Ads - MCC Principal",
+        "google-002": "Google Ads - Performance Max",
+        "google-003": "Google Ads - Search Ads",
+      },
+      TIKTOK: {
         "tiktok-001": "TikTok Ads - E-commerce",
-        "shopee-001": "Shopee Ads - Seller Center",
-      };
-      setProjectName(projectNames[projectId] || "Projeto");
-    }
+        "tiktok-002": "TikTok Ads - Brand Awareness",
+      },
+      SHOPEE: {
+        "shopee-001": "Shopee Ads - Loja Principal",
+        "shopee-002": "Shopee Ads - Loja Secundária",
+      },
+    };
+
+    const name = accountNames[channel]?.[accountId] || `${channel} - ${accountId}`;
+    setProjectName(name);
   }, []);
 
   useEffect(() => {
