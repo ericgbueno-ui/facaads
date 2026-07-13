@@ -5,17 +5,7 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { SpendChart } from "@/components/dashboard/spend-chart";
 import { PeriodSelector } from "@/components/dashboard/period-selector";
 import { ConversionFunnel } from "@/components/dashboard/conversion-funnel";
-import {
-  getCampaignTable,
-  getChannelSummaries,
-  getDailySpendSeries,
-} from "@/lib/dashboard/queries";
-import {
-  getCampaignPerformance,
-  getConversionFunnel,
-  getBenchmarkRanking,
-  PeriodType,
-} from "@/lib/dashboard/advanced-queries";
+import { PeriodType } from "@/lib/dashboard/advanced-queries";
 import { useEffect } from "react";
 
 const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
@@ -31,14 +21,26 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadData() {
       setLoading(true);
-      const [campaignsData, funnelData, rankingData] = await Promise.all([
-        getCampaignPerformance(period),
-        getConversionFunnel(period),
-        getBenchmarkRanking(period),
-      ]);
-      setCampaigns(campaignsData);
-      setFunnel(funnelData);
-      setRanking(rankingData);
+      try {
+        const response = await fetch(`/api/dashboard/metrics?period=${period}`);
+        const data = await response.json();
+
+        if (data.ok) {
+          setCampaigns(data.campaigns || []);
+          setFunnel(data.funnel || []);
+          setRanking(data.ranking || []);
+        } else {
+          console.error("API error:", data.error);
+          setCampaigns([]);
+          setFunnel([]);
+          setRanking([]);
+        }
+      } catch (err) {
+        console.error("Error loading data:", err);
+        setCampaigns([]);
+        setFunnel([]);
+        setRanking([]);
+      }
       setLoading(false);
     }
     loadData();
