@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import * as bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 /**
  * GET /api/seed
@@ -11,7 +11,12 @@ import * as bcrypt from "bcryptjs";
  */
 export async function GET(req: NextRequest) {
   try {
-    const hashedPassword = await bcrypt.hash("portaaberta", 10);
+    // Hash simples da senha
+    const password = "portaaberta";
+    const hash = crypto
+      .createHash("sha256")
+      .update(password)
+      .digest("hex");
 
     const user = await prisma.user.upsert({
       where: { email: "ericgbueno@gmail.com" },
@@ -19,7 +24,7 @@ export async function GET(req: NextRequest) {
       create: {
         email: "ericgbueno@gmail.com",
         name: "Eric Bueno",
-        passwordHash: hashedPassword,
+        passwordHash: hash,
       },
     });
 
@@ -35,13 +40,17 @@ export async function GET(req: NextRequest) {
           email: "ericgbueno@gmail.com",
           password: "portaaberta",
         },
-        message: "Usuário criado com sucesso!",
+        message: "✅ Usuário criado com sucesso!",
       },
       { status: 201 }
     );
   } catch (err) {
+    console.error("Seed error:", err);
     return NextResponse.json(
-      { error: (err as Error).message },
+      {
+        error: (err as Error).message,
+        ok: false
+      },
       { status: 500 }
     );
   }
