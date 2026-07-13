@@ -1,7 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+
+interface ConnectedAccount {
+  id: string;
+  name: string;
+  externalId: string;
+}
 
 const CHANNELS = [
   {
@@ -30,12 +37,7 @@ const CHANNELS = [
   },
 ];
 
-const ACCOUNTS: Record<string, Array<{ id: string; name: string; businessId: string }>> = {
-  META: [
-    { id: "meta-001", name: "Conta Principal", businessId: "act_123456" },
-    { id: "meta-002", name: "Conta Secundária", businessId: "act_789012" },
-    { id: "meta-003", name: "Testes", businessId: "act_345678" },
-  ],
+const MOCK_ACCOUNTS: Record<string, Array<{ id: string; name: string; businessId: string }>> = {
   GOOGLE: [
     { id: "google-001", name: "MCC Principal", businessId: "123-456-789" },
     { id: "google-002", name: "Conta Performance Max", businessId: "456-789-123" },
@@ -54,6 +56,29 @@ const ACCOUNTS: Record<string, Array<{ id: string; name: string; businessId: str
 export default function ProjectsPage() {
   const router = useRouter();
   const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
+  const [metaAccounts, setMetaAccounts] = useState<ConnectedAccount[]>([]);
+  const [loadingMeta, setLoadingMeta] = useState(false);
+
+  useEffect(() => {
+    if (selectedChannel === "META") {
+      fetchMetaAccounts();
+    }
+  }, [selectedChannel]);
+
+  async function fetchMetaAccounts() {
+    setLoadingMeta(true);
+    try {
+      const response = await fetch("/api/auth/meta/accounts");
+      const data = await response.json();
+      if (data.ok) {
+        setMetaAccounts(data.accounts);
+      }
+    } catch (err) {
+      console.error("Error fetching Meta accounts:", err);
+    } finally {
+      setLoadingMeta(false);
+    }
+  }
 
   function handleSelectAccount(accountId: string, channel: string) {
     localStorage.setItem("selectedChannel", channel);
@@ -61,15 +86,25 @@ export default function ProjectsPage() {
     router.push("/dashboard");
   }
 
+  const accounts = selectedChannel === "META" ? metaAccounts : MOCK_ACCOUNTS[selectedChannel] || [];
+
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 px-6 py-12">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold mb-2">Hergé</h1>
-          <p className="text-lg text-neutral-400">
-            {selectedChannel ? "Selecione uma conta" : "Selecione o canal de ads"}
-          </p>
+        {/* Header with Settings Link */}
+        <div className="mb-12 flex justify-between items-start">
+          <div>
+            <h1 className="text-4xl font-bold mb-2">Hergé</h1>
+            <p className="text-lg text-neutral-400">
+              {selectedChannel ? "Selecione uma conta" : "Selecione o canal de ads"}
+            </p>
+          </div>
+          <Link
+            href="/settings"
+            className="px-4 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-sm font-medium text-neutral-300 transition-all"
+          >
+            ⚙️ Configurações
+          </Link>
         </div>
 
         {/* Canais ou Contas */}
@@ -111,23 +146,46 @@ export default function ProjectsPage() {
               </button>
             </div>
 
-            <div className="space-y-3">
-              {(ACCOUNTS[selectedChannel] || []).map((account) => (
-                <button
-                  key={account.id}
-                  onClick={() => handleSelectAccount(account.id, selectedChannel)}
-                  className="w-full text-left p-4 rounded-lg border border-neutral-800 bg-neutral-900 hover:border-neutral-600 hover:bg-neutral-800 transition-all"
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="text-lg font-semibold">{account.name}</h3>
-                      <p className="text-xs text-neutral-500 font-mono">ID: {account.businessId}</p>
+            {loadingMeta && selectedChannel === "META" ? (
+              <p className="text-neutral-400">Carregando contas...</p>
+            ) : accounts.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-neutral-400 mb-4">Nenhuma conta {selectedChannel === "META" ? "Meta Ads" : "disponível"} conectada</p>
+                {selectedChannel === "META" && (
+                  <Link
+                    href="/settings"
+                    className="inline-block px-4 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-sm font-medium text-neutral-300 transition-all"
+                  >
+                    Conectar conta Meta Ads
+                  </Link>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {accounts.map((account) => (
+                  <button
+                    key={account.id}
+                    onClick={() =>
+                      handleSelectAccount(
+                        account.externalId || account.id,
+                        selectedChannel
+                      )
+                    }
+                    className="w-full text-left p-4 rounded-lg border border-neutral-800 bg-neutral-900 hover:border-neutral-600 hover:bg-neutral-800 transition-all"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="text-lg font-semibold">{account.name}</h3>
+                        <p className="text-xs text-neutral-500 font-mono">
+                          ID: {account.externalId || account.businessId}
+                        </p>
+                      </div>
+                      <div className="text-neutral-600">→</div>
                     </div>
-                    <div className="text-neutral-600">→</div>
-                  </div>
-                </button>
-              ))}
-            </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </>
         )}
 
@@ -136,7 +194,9 @@ export default function ProjectsPage() {
           <div className="mt-12 p-6 rounded-lg border border-dashed border-neutral-700 text-center">
             <p className="text-neutral-400">
               Não vê sua conta? <br />
-              <span className="text-sm">Configure uma nova conta em Configurações</span>
+              <Link href="/settings" className="text-blue-400 hover:underline">
+                Configure uma nova conta em Configurações
+              </Link>
             </p>
           </div>
         )}

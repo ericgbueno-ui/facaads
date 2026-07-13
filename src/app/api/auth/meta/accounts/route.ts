@@ -1,0 +1,32 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { auth } from "@/lib/auth";
+import { getUserMetaAccounts } from "@/lib/meta-ads/auth";
+
+export async function GET(req: NextRequest) {
+  try {
+    const session = await getServerSession(auth);
+
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const accounts = await getUserMetaAccounts(session.user.email);
+
+    return NextResponse.json({
+      ok: true,
+      accounts: accounts.map((acc) => ({
+        id: acc.id,
+        name: acc.name,
+        externalId: acc.externalId,
+        lastSyncedAt: acc.lastSyncedAt,
+      })),
+    });
+  } catch (err) {
+    console.error("Get Meta accounts error:", err);
+    return NextResponse.json(
+      { error: (err as Error).message },
+      { status: 500 }
+    );
+  }
+}
