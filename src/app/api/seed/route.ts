@@ -3,20 +3,13 @@ import { prisma } from "@/lib/prisma";
 import * as bcrypt from "bcryptjs";
 
 /**
- * POST /api/seed
+ * GET /api/seed
  * Cria usuário de teste para desenvolvimento
  *
  * Email: ericgbueno@gmail.com
  * Senha: portaaberta
  */
-export async function POST(req: NextRequest) {
-  const secret = req.headers.get("x-seed-secret");
-
-  // Proteger com secret simples
-  if (secret !== "seed-herge-2026") {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
-
+export async function GET(req: NextRequest) {
   try {
     const hashedPassword = await bcrypt.hash("portaaberta", 10);
 
@@ -42,6 +35,7 @@ export async function POST(req: NextRequest) {
           email: "ericgbueno@gmail.com",
           password: "portaaberta",
         },
+        message: "Usuário criado com sucesso!",
       },
       { status: 201 }
     );
