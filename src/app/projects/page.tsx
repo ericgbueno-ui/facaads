@@ -92,12 +92,24 @@ export default function ProjectsPage() {
         ) : (
           // Step 2: Select Account
           <>
-            <button
-              onClick={() => setSelectedChannel(null)}
-              className="mb-6 px-4 py-2 text-sm bg-neutral-800 hover:bg-neutral-700 rounded-md transition-all"
-            >
-              ← Voltar
-            </button>
+            <div className="mb-6 flex gap-2">
+              <button
+                onClick={() => setSelectedChannel(null)}
+                className="px-4 py-2 text-sm bg-neutral-800 hover:bg-neutral-700 rounded-md transition-all"
+              >
+                ← Voltar uma seção
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.removeItem("selectedChannel");
+                  localStorage.removeItem("selectedAccount");
+                  setSelectedChannel(null);
+                }}
+                className="px-4 py-2 text-sm bg-neutral-700 hover:bg-neutral-600 rounded-md transition-all text-neutral-300"
+              >
+                🏠 Voltar para o início
+              </button>
+            </div>
 
             <div className="space-y-3">
               {(ACCOUNTS[selectedChannel] || []).map((account) => (
