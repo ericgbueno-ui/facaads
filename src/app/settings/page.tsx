@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-interface MetaAccount {
+interface AdAccount {
   id: string;
   name: string;
   externalId: string;
@@ -11,32 +11,33 @@ interface MetaAccount {
 }
 
 export default function SettingsPage() {
-  const [metaAccounts, setMetaAccounts] = useState<MetaAccount[]>([]);
+  const [metaAccounts, setMetaAccounts] = useState<AdAccount[]>([]);
+  const [googleAccounts, setGoogleAccounts] = useState<AdAccount[]>([]);
+  const [tiktokAccounts, setTikTokAccounts] = useState<AdAccount[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showConnectForm, setShowConnectForm] = useState(false);
+  const [showForm, setShowForm] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
-    accessToken: "",
-    businessAccountId: "",
-    accountName: "",
-  });
+  const [formData, setFormData] = useState({ token: "", id: "", name: "" });
 
   useEffect(() => {
-    fetchAccounts();
+    fetchAllAccounts();
   }, []);
 
-  async function fetchAccounts() {
+  async function fetchAllAccounts() {
     try {
       setLoading(true);
-      const response = await fetch("/api/auth/meta/accounts");
-      const data = await response.json();
+      const [meta, google, tiktok] = await Promise.all([
+        fetch("/api/auth/meta/accounts").then((r) => r.json()),
+        fetch("/api/auth/google/accounts").then((r) => r.json()),
+        fetch("/api/auth/tiktok/accounts").then((r) => r.json()),
+      ]);
 
-      if (data.ok) {
-        setMetaAccounts(data.accounts);
-      }
+      setMetaAccounts(meta.accounts || []);
+      setGoogleAccounts(google.accounts || []);
+      setTikTokAccounts(tiktok.accounts || []);
     } catch (err) {
       console.error("Error fetching accounts:", err);
     } finally {
@@ -44,26 +45,38 @@ export default function SettingsPage() {
     }
   }
 
-  async function handleConnect(e: React.FormEvent) {
+  async function handleConnect(e: React.FormEvent, channel: string) {
     e.preventDefault();
     setConnecting(true);
     setError(null);
     setSuccess(null);
 
+    const endpoints: Record<string, string> = {
+      META: "/api/auth/meta/connect",
+      GOOGLE: "/api/auth/google/connect",
+      TIKTOK: "/api/auth/tiktok/connect",
+    };
+
+    const payloads: Record<string, any> = {
+      META: { accessToken: formData.token, businessAccountId: formData.id, accountName: formData.name },
+      GOOGLE: { refreshToken: formData.token, customerId: formData.id, accountName: formData.name },
+      TIKTOK: { accessToken: formData.token, advertiserId: formData.id, accountName: formData.name },
+    };
+
     try {
-      const response = await fetch("/api/auth/meta/connect", {
+      const response = await fetch(endpoints[channel], {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payloads[channel]),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        setSuccess("Conta Meta Ads conectada com sucesso!");
-        setFormData({ accessToken: "", businessAccountId: "", accountName: "" });
-        setShowConnectForm(false);
-        await fetchAccounts();
+        setSuccess(`Conta ${channel} conectada com sucesso!`);
+        setFormData({ token: "", id: "", name: "" });
+        setShowForm(null);
+        await fetchAllAccounts();
       } else {
         setError(data.error || "Erro ao conectar conta");
       }
@@ -87,98 +100,70 @@ export default function SettingsPage() {
       </div>
 
       {/* Meta Ads Section */}
-      <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h2 className="text-lg font-semibold text-neutral-100">📘 Meta Ads</h2>
-            <p className="text-sm text-neutral-400">Facebook & Instagram Ads</p>
-          </div>
-          <button
-            onClick={() => setShowConnectForm(!showConnectForm)}
-            className="px-4 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-sm font-medium text-neutral-100 transition-all"
-          >
-            {showConnectForm ? "Cancelar" : "+ Conectar Conta"}
-          </button>
-        </div>
+      <PlatformSection
+        channel="META"
+        icon="📘"
+        title="Meta Ads"
+        description="Facebook & Instagram Ads"
+        accounts={metaAccounts}
+        loading={loading}
+        showForm={showForm === "META"}
+        onToggleForm={() => setShowForm(showForm === "META" ? null : "META")}
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={(e) => handleConnect(e, "META")}
+        connecting={connecting}
+        error={error}
+        tokenPlaceholder="Copie seu token do Meta Business Suite"
+        idPlaceholder="act_123456789"
+        tokenLabel="Token de Acesso"
+        idLabel="ID da Conta de Negócios"
+        tokenHint="Obtenha em: business.facebook.com → Configurações → Chaves de app"
+      />
 
-        {/* Connect Form */}
-        {showConnectForm && (
-          <form onSubmit={handleConnect} className="space-y-4 mb-6 p-4 bg-neutral-800 rounded-md">
-            <div>
-              <label className="block text-sm text-neutral-300 mb-1">Token de Acesso</label>
-              <input
-                type="password"
-                value={formData.accessToken}
-                onChange={(e) => setFormData({ ...formData, accessToken: e.target.value })}
-                placeholder="Copie seu token do Meta Business Suite"
-                className="w-full px-3 py-2 rounded-md border border-neutral-700 bg-neutral-700 text-neutral-100 text-sm"
-                required
-              />
-              <p className="text-xs text-neutral-500 mt-1">
-                Obtenha em: business.facebook.com → Configurações → Chaves de app
-              </p>
-            </div>
+      {/* Google Ads Section */}
+      <PlatformSection
+        channel="GOOGLE"
+        icon="🔵"
+        title="Google Ads"
+        description="Google Search & Display"
+        accounts={googleAccounts}
+        loading={loading}
+        showForm={showForm === "GOOGLE"}
+        onToggleForm={() => setShowForm(showForm === "GOOGLE" ? null : "GOOGLE")}
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={(e) => handleConnect(e, "GOOGLE")}
+        connecting={connecting}
+        error={error}
+        tokenPlaceholder="Cole seu Refresh Token"
+        idPlaceholder="1234567890"
+        tokenLabel="Refresh Token"
+        idLabel="Customer ID"
+        tokenHint="Obtenha em: https://myaccount.google.com/permissions (Google Ads API)"
+      />
 
-            <div>
-              <label className="block text-sm text-neutral-300 mb-1">ID da Conta de Negócios</label>
-              <input
-                type="text"
-                value={formData.businessAccountId}
-                onChange={(e) => setFormData({ ...formData, businessAccountId: e.target.value })}
-                placeholder="act_123456789"
-                className="w-full px-3 py-2 rounded-md border border-neutral-700 bg-neutral-700 text-neutral-100 text-sm"
-                required
-              />
-              <p className="text-xs text-neutral-500 mt-1">
-                Formato: act_XXXXXXXXX
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm text-neutral-300 mb-1">Nome da Conta</label>
-              <input
-                type="text"
-                value={formData.accountName}
-                onChange={(e) => setFormData({ ...formData, accountName: e.target.value })}
-                placeholder="Minha Conta Meta"
-                className="w-full px-3 py-2 rounded-md border border-neutral-700 bg-neutral-700 text-neutral-100 text-sm"
-                required
-              />
-            </div>
-
-            {error && <p className="text-sm text-red-400">{error}</p>}
-
-            <button
-              type="submit"
-              disabled={connecting}
-              className="w-full px-4 py-2 rounded-md bg-neutral-100 text-neutral-900 text-sm font-medium disabled:opacity-50 hover:bg-neutral-200"
-            >
-              {connecting ? "Conectando..." : "Conectar"}
-            </button>
-          </form>
-        )}
-
-        {/* Accounts List */}
-        {loading ? (
-          <p className="text-neutral-400">Carregando...</p>
-        ) : metaAccounts.length === 0 ? (
-          <p className="text-neutral-400 text-sm">Nenhuma conta conectada</p>
-        ) : (
-          <div className="space-y-2">
-            {metaAccounts.map((account) => (
-              <div key={account.id} className="p-3 bg-neutral-800 rounded-md">
-                <p className="text-neutral-100 font-medium">{account.name}</p>
-                <p className="text-xs text-neutral-500">ID: {account.externalId}</p>
-                {account.lastSyncedAt && (
-                  <p className="text-xs text-neutral-500">
-                    Última sincronização: {new Date(account.lastSyncedAt).toLocaleString("pt-BR")}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* TikTok Ads Section */}
+      <PlatformSection
+        channel="TIKTOK"
+        icon="🎵"
+        title="TikTok Ads"
+        description="TikTok Business Center"
+        accounts={tiktokAccounts}
+        loading={loading}
+        showForm={showForm === "TIKTOK"}
+        onToggleForm={() => setShowForm(showForm === "TIKTOK" ? null : "TIKTOK")}
+        formData={formData}
+        setFormData={setFormData}
+        onSubmit={(e) => handleConnect(e, "TIKTOK")}
+        connecting={connecting}
+        error={error}
+        tokenPlaceholder="Cole seu Access Token"
+        idPlaceholder="1234567890123456"
+        tokenLabel="Access Token"
+        idLabel="Advertiser ID"
+        tokenHint="Obtenha em: TikTok Business Center → Settings → Apps → Tokens"
+      />
 
       {/* Success Message */}
       {success && (
@@ -186,18 +171,136 @@ export default function SettingsPage() {
           {success}
         </div>
       )}
+    </div>
+  );
+}
 
-      {/* Info Section */}
-      <div className="rounded-lg border border-neutral-700 bg-neutral-800 p-4">
-        <h3 className="text-sm font-semibold text-neutral-200 mb-2">Como conectar sua conta Meta Ads?</h3>
-        <ol className="text-xs text-neutral-400 space-y-1 list-decimal list-inside">
-          <li>Acesse <a href="https://business.facebook.com" className="text-blue-400 hover:underline">business.facebook.com</a></li>
-          <li>Vá para Configurações → Chaves de app</li>
-          <li>Copie seu Token de Acesso Permanente</li>
-          <li>Copie o ID da sua Conta de Negócios (Ad Account)</li>
-          <li>Cole os dados acima e clique em Conectar</li>
-        </ol>
+function PlatformSection({
+  channel,
+  icon,
+  title,
+  description,
+  accounts,
+  loading,
+  showForm,
+  onToggleForm,
+  formData,
+  setFormData,
+  onSubmit,
+  connecting,
+  error,
+  tokenPlaceholder,
+  idPlaceholder,
+  tokenLabel,
+  idLabel,
+  tokenHint,
+}: {
+  channel: string;
+  icon: string;
+  title: string;
+  description: string;
+  accounts: AdAccount[];
+  loading: boolean;
+  showForm: boolean;
+  onToggleForm: () => void;
+  formData: any;
+  setFormData: (data: any) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  connecting: boolean;
+  error: string | null;
+  tokenPlaceholder: string;
+  idPlaceholder: string;
+  tokenLabel: string;
+  idLabel: string;
+  tokenHint: string;
+}) {
+  return (
+    <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-lg font-semibold text-neutral-100">{icon} {title}</h2>
+          <p className="text-sm text-neutral-400">{description}</p>
+        </div>
+        <button
+          onClick={onToggleForm}
+          className="px-4 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-sm font-medium text-neutral-100 transition-all"
+        >
+          {showForm ? "Cancelar" : "+ Conectar Conta"}
+        </button>
       </div>
+
+      {/* Connect Form */}
+      {showForm && (
+        <form onSubmit={onSubmit} className="space-y-4 mb-6 p-4 bg-neutral-800 rounded-md">
+          <div>
+            <label className="block text-sm text-neutral-300 mb-1">{tokenLabel}</label>
+            <input
+              type="password"
+              value={formData.token}
+              onChange={(e) => setFormData({ ...formData, token: e.target.value })}
+              placeholder={tokenPlaceholder}
+              className="w-full px-3 py-2 rounded-md border border-neutral-700 bg-neutral-700 text-neutral-100 text-sm"
+              required
+            />
+            <p className="text-xs text-neutral-500 mt-1">{tokenHint}</p>
+          </div>
+
+          <div>
+            <label className="block text-sm text-neutral-300 mb-1">{idLabel}</label>
+            <input
+              type="text"
+              value={formData.id}
+              onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+              placeholder={idPlaceholder}
+              className="w-full px-3 py-2 rounded-md border border-neutral-700 bg-neutral-700 text-neutral-100 text-sm"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-neutral-300 mb-1">Nome da Conta</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Minha Conta"
+              className="w-full px-3 py-2 rounded-md border border-neutral-700 bg-neutral-700 text-neutral-100 text-sm"
+              required
+            />
+          </div>
+
+          {error && <p className="text-sm text-red-400">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={connecting}
+            className="w-full px-4 py-2 rounded-md bg-neutral-100 text-neutral-900 text-sm font-medium disabled:opacity-50 hover:bg-neutral-200"
+          >
+            {connecting ? "Conectando..." : "Conectar"}
+          </button>
+        </form>
+      )}
+
+      {/* Accounts List */}
+      {loading ? (
+        <p className="text-neutral-400">Carregando...</p>
+      ) : accounts.length === 0 ? (
+        <p className="text-neutral-400 text-sm">Nenhuma conta conectada</p>
+      ) : (
+        <div className="space-y-2">
+          {accounts.map((account) => (
+            <div key={account.id} className="p-3 bg-neutral-800 rounded-md">
+              <p className="text-neutral-100 font-medium">{account.name}</p>
+              <p className="text-xs text-neutral-500">ID: {account.externalId}</p>
+              {account.lastSyncedAt && (
+                <p className="text-xs text-neutral-500">
+                  Última sincronização: {new Date(account.lastSyncedAt).toLocaleString("pt-BR")}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

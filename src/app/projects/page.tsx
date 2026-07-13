@@ -37,16 +37,8 @@ const CHANNELS = [
   },
 ];
 
+// Mock accounts only for Shopee (no official API)
 const MOCK_ACCOUNTS: Record<string, Array<{ id: string; name: string; businessId: string }>> = {
-  GOOGLE: [
-    { id: "google-001", name: "MCC Principal", businessId: "123-456-789" },
-    { id: "google-002", name: "Conta Performance Max", businessId: "456-789-123" },
-    { id: "google-003", name: "Search Ads", businessId: "789-123-456" },
-  ],
-  TIKTOK: [
-    { id: "tiktok-001", name: "E-commerce", businessId: "tt_business_001" },
-    { id: "tiktok-002", name: "Brand Awareness", businessId: "tt_business_002" },
-  ],
   SHOPEE: [
     { id: "shopee-001", name: "Loja Principal", businessId: "shop_123456" },
     { id: "shopee-002", name: "Loja Secundária", businessId: "shop_789012" },
@@ -61,20 +53,24 @@ export default function ProjectsPage() {
 
   useEffect(() => {
     if (selectedChannel === "META") {
-      fetchMetaAccounts();
+      fetchAccounts("/api/auth/meta/accounts");
+    } else if (selectedChannel === "GOOGLE") {
+      fetchAccounts("/api/auth/google/accounts");
+    } else if (selectedChannel === "TIKTOK") {
+      fetchAccounts("/api/auth/tiktok/accounts");
     }
   }, [selectedChannel]);
 
-  async function fetchMetaAccounts() {
+  async function fetchAccounts(endpoint: string) {
     setLoadingMeta(true);
     try {
-      const response = await fetch("/api/auth/meta/accounts");
+      const response = await fetch(endpoint);
       const data = await response.json();
       if (data.ok) {
         setMetaAccounts(data.accounts);
       }
     } catch (err) {
-      console.error("Error fetching Meta accounts:", err);
+      console.error("Error fetching accounts:", err);
     } finally {
       setLoadingMeta(false);
     }
@@ -86,7 +82,10 @@ export default function ProjectsPage() {
     router.push("/dashboard");
   }
 
-  const accounts = selectedChannel === "META" ? metaAccounts : MOCK_ACCOUNTS[selectedChannel] || [];
+  // Show real accounts for META, GOOGLE, TIKTOK; mock only for SHOPEE
+  const accounts = ["META", "GOOGLE", "TIKTOK"].includes(selectedChannel || "")
+    ? metaAccounts
+    : MOCK_ACCOUNTS[selectedChannel] || [];
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 px-6 py-12">
