@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hergé Gestão de tráfego",
+  title: "Hergé",
   description: "Dashboard de métricas de campanhas — Meta, Google, TikTok, Shopee Ads",
 };
 
