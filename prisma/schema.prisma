@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+}
+
+enum AdChannel {
+  META
+  GOOGLE
+  TIKTOK
+  SHOPEE
+}
+
+enum ConversionSourceType {
+  SHOPIFY
+  CRM
+  TYPEFORM
+  API
+  MANUAL
+  OTHER
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+// --- Auth (NextAuth) ---
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  accounts      Account[]
+  sessions      Session[]
+  createdAt     DateTime  @default(now())
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// --- Ad accounts / campaigns / metrics ---
+
+model AdAccount {
+  id                 String     @id @default(cuid())
+  channel            AdChannel
+  externalAccountId  String
+  name               String
+  loginCustomerId    String? // Google Ads MCC, quando aplicável
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  campaigns          Campaign[]
+
+  @@unique([channel, externalAccountId])
+}
+
+model Campaign {
+  id               String             @id @default(cuid())
+  adAccountId      String
+  adAccount        AdAccount          @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+  externalCampaignId String
+  name             String
+  objective        String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  snapshots        MetricSnapshot[]
+  conversions      ConversionEvent[]  @relation("ConversionsToCampaign")
+  alerts           Alert[]
+
+  @@unique([adAccountId, externalCampaignId])
+}
+
+model MetricSnapshot {
+  id                       String   @id @default(cuid())
+  campaignId               String
+  campaign                 Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  date                     DateTime @db.Date
+  spend                    Decimal  @db.Decimal(12, 2)
+  impressions              Int      @default(0)
+  clicks                   Int      @default(0)
+  conversions              Int      @default(0)
+  conversionValue          Decimal? @db.Decimal(12, 2)
+  raw                      Json? // payload bruto da API pra auditoria/debug
+  createdAt                DateTime @default(now())
+
+  @@unique([campaignId, date])
+}
+
+// --- Conversões offline (de qualquer origem) ---
+
+model ConversionEvent {
+  id                String                @id @default(cuid())
+  campaignId        String?
+  campaign          Campaign?             @relation("ConversionsToCampaign", fields: [campaignId], references: [id], onDelete: SetNull)
+  channel           AdChannel
+  sourceType        ConversionSourceType
+  amount            Decimal?              @db.Decimal(12, 2)
+  externalId        String?
+  metadata          Json? // dados adicionais (telefone, email, etc)
+  pushBackStatus    String? // "pending", "sent", "failed"
+  pushBackError     String?
+  createdAt         DateTime              @default(now())
+
+  @@index([campaignId])
+  @@index([channel])
+  @@index([createdAt])
+}
+
+// --- Alertas ---
+
+model Alert {
+  id          String        @id @default(cuid())
+  campaignId  String?
+  campaign    Campaign?     @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  severity    AlertSeverity
+  type        String // "cpa_spike", "ctr_drop", "no_conversions", etc
+  message     String
+  threshold   Decimal?      @db.Decimal(12, 4)
+  currentValue Decimal?     @db.Decimal(12, 4)
+  dismissedAt DateTime?
+  createdAt   DateTime      @default(now())
+
+  @@index([campaignId])
+  @@index([severity])
+  @@index([createdAt])
+}

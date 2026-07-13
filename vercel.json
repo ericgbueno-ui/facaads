@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/sync-ads",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/detect-alerts",
+      "schedule": "0 * * * *"
+    }
+  ]
+}
