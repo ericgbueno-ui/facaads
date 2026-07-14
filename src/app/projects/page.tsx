@@ -182,7 +182,7 @@ export default function ProjectsPage() {
                       <div>
                         <h3 className="text-lg font-semibold">{account.name}</h3>
                         <p className="text-xs text-neutral-500 font-mono">
-                          ID: {account.externalId || account.businessId}
+                          ID: {account.externalId}
                         </p>
                       </div>
                       <div className="text-neutral-600">→</div>
