@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
+
 import { auth } from "@/lib/auth";
 import { getUserTikTokAdsAccounts } from "@/lib/tiktok-ads/auth";
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(auth);
+    const session = await auth();
 
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
+
 import { auth } from "@/lib/auth";
 import { storeGoogleAdsToken } from "@/lib/google-ads/auth";
 import { z } from "zod";
@@ -12,7 +12,7 @@ const ConnectGoogleSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(auth);
+    const session = await auth();
 
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
