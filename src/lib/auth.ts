@@ -32,6 +32,10 @@ function initAuth() {
             };
           }
 
+          if (!process.env.DATABASE_URL) {
+            return null;
+          }
+
           try {
             const user = await prisma.user.findUnique({ where: { email } });
             if (!user?.passwordHash) return null;
@@ -42,13 +46,6 @@ function initAuth() {
             return { id: user.id, email: user.email, name: user.name };
           } catch (err) {
             console.error("Auth error:", err);
-            if (email === "ericgbueno@gmail.com" && password === "portaaberta") {
-              return {
-                id: "test-user-1",
-                email: "ericgbueno@gmail.com",
-                name: "Eric Bueno",
-              };
-            }
             return null;
           }
         },
