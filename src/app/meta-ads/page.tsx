@@ -107,14 +107,24 @@ export default function MetaAdsPage() {
     <div className="min-h-screen bg-neutral-950 text-neutral-100 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold mb-1">📘 Meta Ads</h1>
-            <p className="text-neutral-400">Últimos 30 dias</p>
-          </div>
-          <Link href="/projects" className="text-sm text-neutral-400 hover:text-neutral-200">
-            ← Voltar
+        <div className="flex justify-between items-center mb-6">
+          <Link href="/" className="text-2xl font-bold hover:opacity-80 transition">
+            Hergé
           </Link>
+          <div className="flex gap-3">
+            <Link href="/projects" className="px-4 py-2 text-sm bg-neutral-800 hover:bg-neutral-700 rounded-md transition">
+              ← Voltar uma seção
+            </Link>
+            <Link href="/projects" className="text-sm text-neutral-400 hover:text-neutral-200">
+              Canais
+            </Link>
+          </div>
+        </div>
+
+        {/* Meta Ads Title */}
+        <div>
+          <h1 className="text-3xl font-bold mb-1">📘 Meta Ads</h1>
+          <p className="text-neutral-400">Últimos 30 dias</p>
         </div>
 
         {/* KPI Cards */}

@@ -4,13 +4,24 @@ import { fetchMetaInsights, fetchMetaCampaigns, calculateTotals, calculateMetric
 export async function GET(req: NextRequest) {
   try {
     const accessToken = process.env.META_ADS_ACCESS_TOKEN;
-    const accountId = process.env.META_ADS_ACCOUNT_ID;
+    let accountId = process.env.META_ADS_ACCOUNT_ID;
 
-    if (!accessToken || !accountId) {
+    if (!accessToken) {
       return NextResponse.json(
         { error: "Meta Ads credentials not configured" },
         { status: 400 }
       );
+    }
+
+    // If no accountId, try to discover it
+    if (!accountId) {
+      const discoverUrl = `https://graph.facebook.com/v21.0/me/adaccounts?fields=id,name&access_token=${accessToken}`;
+      const discoverRes = await fetch(discoverUrl);
+      const discoverData = await discoverRes.json();
+      if (discoverData.data?.[0]?.id) {
+        accountId = discoverData.data[0].id;
+        console.log("Discovered Ad Account:", accountId);
+      }
     }
 
     // Get date range (last 30 days)

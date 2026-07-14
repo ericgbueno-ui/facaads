@@ -1,5 +1,5 @@
 const META_API_VERSION = "v21.0";
-const META_GRAPH_API = "https://graph.instagram.com";
+const META_GRAPH_API = "https://graph.facebook.com";
 
 export interface MetaInsight {
   date: string;
@@ -30,27 +30,29 @@ export async function fetchMetaInsights(
   dateEnd: string
 ): Promise<MetaInsight[]> {
   try {
-    const response = await fetch(
-      `${META_GRAPH_API}/${META_API_VERSION}/${accountId}/insights?` +
-      `fields=spend,impressions,clicks,reach&` +
+    const url = `${META_GRAPH_API}/${META_API_VERSION}/${accountId}/insights?` +
+      `fields=spend,impressions,clicks&` +
       `time_increment=1&` +
-      `date_preset=custom&` +
       `time_range={"since":"${dateStart}","until":"${dateEnd}"}&` +
-      `access_token=${accessToken}`
-    );
+      `access_token=${accessToken}`;
+
+    console.log("Fetching Meta insights");
+    const response = await fetch(url);
 
     if (!response.ok) {
-      console.error("Meta API error:", response.statusText);
+      const errorData = await response.text();
+      console.error("Meta API error:", response.status, errorData);
       return [];
     }
 
     const data = await response.json();
+    console.log("✅ Meta insights SUCCESS:", data.data?.length || 0, "days");
     return (data.data || []).map((item: any) => ({
       date: item.date,
       spend: parseFloat(item.spend || "0"),
       impressions: parseInt(item.impressions || "0"),
       clicks: parseInt(item.clicks || "0"),
-      reach: parseInt(item.reach || "0"),
+      reach: 0,
     }));
   } catch (err) {
     console.error("Failed to fetch Meta insights:", err);
@@ -65,19 +67,22 @@ export async function fetchMetaCampaigns(
   dateEnd: string
 ): Promise<CampaignMetrics[]> {
   try {
-    const response = await fetch(
-      `${META_GRAPH_API}/${META_API_VERSION}/${accountId}/campaigns?` +
-      `fields=id,name,insights{spend,impressions,clicks,actions,action_values}&` +
+    const url = `${META_GRAPH_API}/${META_API_VERSION}/${accountId}/campaigns?` +
+      `fields=id,name,insights{spend,impressions,clicks}&` +
       `time_range={"since":"${dateStart}","until":"${dateEnd}"}&` +
-      `access_token=${accessToken}`
-    );
+      `access_token=${accessToken}`;
+
+    console.log("Fetching Meta campaigns");
+    const response = await fetch(url);
 
     if (!response.ok) {
-      console.error("Meta API error:", response.statusText);
+      const errorData = await response.text();
+      console.error("Meta API error:", response.status, errorData);
       return [];
     }
 
     const data = await response.json();
+    console.log("✅ Meta campaigns SUCCESS:", data.data?.length || 0, "campaigns");
 
     return (data.data || []).map((campaign: any) => {
       const insights = campaign.insights?.data?.[0] || {};
