@@ -6,16 +6,12 @@ interface TikTokAdsTokenPayload {
   accountName: string;
 }
 
-export async function storeTikTokAdsToken(
-  userId: string,
-  payload: TikTokAdsTokenPayload
-) {
+export async function storeTikTokAdsToken(payload: TikTokAdsTokenPayload) {
   return prisma.adAccount.upsert({
     where: {
-      userId_channel_externalId: {
-        userId,
+      channel_externalAccountId: {
         channel: "TIKTOK",
-        externalId: payload.advertiserId,
+        externalAccountId: payload.advertiserId,
       },
     },
     update: {
@@ -24,9 +20,8 @@ export async function storeTikTokAdsToken(
       lastSyncedAt: new Date(),
     },
     create: {
-      userId,
       channel: "TIKTOK",
-      externalId: payload.advertiserId,
+      externalAccountId: payload.advertiserId,
       name: payload.accountName,
       accessToken: payload.accessToken,
       lastSyncedAt: new Date(),
@@ -34,13 +29,12 @@ export async function storeTikTokAdsToken(
   });
 }
 
-export async function getTikTokAdsAccessToken(userId: string, advertiserId: string) {
+export async function getTikTokAdsAccessToken(advertiserId: string) {
   const account = await prisma.adAccount.findUnique({
     where: {
-      userId_channel_externalId: {
-        userId,
+      channel_externalAccountId: {
         channel: "TIKTOK",
-        externalId: advertiserId,
+        externalAccountId: advertiserId,
       },
     },
   });
@@ -48,10 +42,9 @@ export async function getTikTokAdsAccessToken(userId: string, advertiserId: stri
   return account?.accessToken || null;
 }
 
-export async function getUserTikTokAdsAccounts(userId: string) {
+export async function getUserTikTokAdsAccounts() {
   return prisma.adAccount.findMany({
     where: {
-      userId,
       channel: "TIKTOK",
     },
   });

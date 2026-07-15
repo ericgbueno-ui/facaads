@@ -6,16 +6,12 @@ interface GoogleAdsTokenPayload {
   accountName: string;
 }
 
-export async function storeGoogleAdsToken(
-  userId: string,
-  payload: GoogleAdsTokenPayload
-) {
+export async function storeGoogleAdsToken(payload: GoogleAdsTokenPayload) {
   return prisma.adAccount.upsert({
     where: {
-      userId_channel_externalId: {
-        userId,
+      channel_externalAccountId: {
         channel: "GOOGLE",
-        externalId: payload.customerId,
+        externalAccountId: payload.customerId,
       },
     },
     update: {
@@ -24,9 +20,8 @@ export async function storeGoogleAdsToken(
       lastSyncedAt: new Date(),
     },
     create: {
-      userId,
       channel: "GOOGLE",
-      externalId: payload.customerId,
+      externalAccountId: payload.customerId,
       name: payload.accountName,
       refreshToken: payload.refreshToken,
       lastSyncedAt: new Date(),
@@ -34,13 +29,12 @@ export async function storeGoogleAdsToken(
   });
 }
 
-export async function getGoogleAdsRefreshToken(userId: string, customerId: string) {
+export async function getGoogleAdsRefreshToken(customerId: string) {
   const account = await prisma.adAccount.findUnique({
     where: {
-      userId_channel_externalId: {
-        userId,
+      channel_externalAccountId: {
         channel: "GOOGLE",
-        externalId: customerId,
+        externalAccountId: customerId,
       },
     },
   });
@@ -48,10 +42,9 @@ export async function getGoogleAdsRefreshToken(userId: string, customerId: strin
   return account?.refreshToken || null;
 }
 
-export async function getUserGoogleAdsAccounts(userId: string) {
+export async function getUserGoogleAdsAccounts() {
   return prisma.adAccount.findMany({
     where: {
-      userId,
       channel: "GOOGLE",
     },
   });

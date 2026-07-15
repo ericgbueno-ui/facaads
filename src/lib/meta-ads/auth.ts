@@ -6,16 +6,12 @@ interface MetaAccessTokenPayload {
   accountName: string;
 }
 
-export async function storeMetaAccessToken(
-  userId: string,
-  payload: MetaAccessTokenPayload
-) {
+export async function storeMetaAccessToken(payload: MetaAccessTokenPayload) {
   return prisma.adAccount.upsert({
     where: {
-      userId_channel_externalId: {
-        userId,
+      channel_externalAccountId: {
         channel: "META",
-        externalId: payload.businessAccountId,
+        externalAccountId: payload.businessAccountId,
       },
     },
     update: {
@@ -24,9 +20,8 @@ export async function storeMetaAccessToken(
       lastSyncedAt: new Date(),
     },
     create: {
-      userId,
       channel: "META",
-      externalId: payload.businessAccountId,
+      externalAccountId: payload.businessAccountId,
       name: payload.accountName,
       accessToken: payload.accessToken,
       lastSyncedAt: new Date(),
@@ -34,13 +29,12 @@ export async function storeMetaAccessToken(
   });
 }
 
-export async function getMetaAccessToken(userId: string, accountId: string) {
+export async function getMetaAccessToken(accountId: string) {
   const account = await prisma.adAccount.findUnique({
     where: {
-      userId_channel_externalId: {
-        userId,
+      channel_externalAccountId: {
         channel: "META",
-        externalId: accountId,
+        externalAccountId: accountId,
       },
     },
   });
@@ -48,10 +42,9 @@ export async function getMetaAccessToken(userId: string, accountId: string) {
   return account?.accessToken || null;
 }
 
-export async function getUserMetaAccounts(userId: string) {
+export async function getUserMetaAccounts() {
   return prisma.adAccount.findMany({
     where: {
-      userId,
       channel: "META",
     },
   });

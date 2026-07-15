@@ -11,14 +11,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const accounts = await getUserMetaAccounts(session.user.email);
+    const accounts = await getUserMetaAccounts();
 
     return NextResponse.json({
       ok: true,
       accounts: accounts.map((acc: any) => ({
         id: acc.id,
         name: acc.name,
-        externalId: acc.externalId,
+        externalId: acc.externalAccountId,
         lastSyncedAt: acc.lastSyncedAt,
       })),
     });

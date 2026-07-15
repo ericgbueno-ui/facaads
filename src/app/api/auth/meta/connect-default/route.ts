@@ -4,9 +4,8 @@ import { auth } from "@/lib/auth";
 import { storeMetaAccessToken } from "@/lib/meta-ads/auth";
 import { z } from "zod";
 
-const ConnectMetaSchema = z.object({
-  accessToken: z.string().min(1, "Access token required"),
-  businessAccountId: z.string().min(1, "Business Account ID required"),
+const ConnectDefaultSchema = z.object({
+  accountId: z.string().min(1, "Account ID required"),
   accountName: z.string().min(1, "Account name required"),
 });
 
@@ -18,31 +17,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { accessToken, businessAccountId, accountName } = ConnectMetaSchema.parse(body);
-
-    // Verify token is valid by making a test API call
-    const verifyResponse = await fetch(
-      `https://graph.facebook.com/v21.0/${businessAccountId}?fields=name,id&access_token=${accessToken}`
-    );
-
-    if (!verifyResponse.ok) {
+    const accessToken = process.env.META_ADS_ACCESS_TOKEN;
+    if (!accessToken) {
       return NextResponse.json(
-        { error: "Invalid Meta Ads access token or Account ID" },
+        { error: "Meta Ads não está configurado no sistema (falta META_ADS_ACCESS_TOKEN)" },
         { status: 400 }
       );
     }
 
-    // Store token in database
+    const body = await req.json();
+    const { accountId, accountName } = ConnectDefaultSchema.parse(body);
+
     const account = await storeMetaAccessToken({
       accessToken,
-      businessAccountId,
+      businessAccountId: accountId,
       accountName,
     });
 
     return NextResponse.json({
       ok: true,
-      message: "Meta Ads account connected successfully",
+      message: "Conta Meta Ads conectada com sucesso",
       account: {
         id: account.id,
         name: account.name,
@@ -50,7 +44,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err) {
-    console.error("Connect Meta error:", err);
+    console.error("Connect Meta (default) error:", err);
 
     if (err instanceof z.ZodError) {
       return NextResponse.json(

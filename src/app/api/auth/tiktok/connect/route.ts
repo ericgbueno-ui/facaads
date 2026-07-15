@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const account = await storeTikTokAdsToken(session.user.email, {
+    const account = await storeTikTokAdsToken({
       accessToken,
       advertiserId,
       accountName,
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       account: {
         id: account.id,
         name: account.name,
-        externalId: account.externalId,
+        externalId: account.externalAccountId,
       },
     });
   } catch (err) {

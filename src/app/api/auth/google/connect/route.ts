@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const account = await storeGoogleAdsToken(session.user.email, {
+    const account = await storeGoogleAdsToken({
       refreshToken,
       customerId,
       accountName,
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       account: {
         id: account.id,
         name: account.name,
-        externalId: account.externalId,
+        externalId: account.externalAccountId,
       },
     });
   } catch (err) {

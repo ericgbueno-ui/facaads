@@ -13,7 +13,6 @@ export async function GET(req: NextRequest) {
 
     const accounts = await prisma.adAccount.findMany({
       where: {
-        userId: session.user.email,
         channel: "SHOPEE",
       },
     });
@@ -23,7 +22,7 @@ export async function GET(req: NextRequest) {
       accounts: accounts.map((acc: any) => ({
         id: acc.id,
         name: acc.name,
-        externalId: acc.externalId,
+        externalId: acc.externalAccountId,
         lastSyncedAt: acc.lastSyncedAt,
       })),
     });

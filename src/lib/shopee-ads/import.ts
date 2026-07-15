@@ -41,8 +41,7 @@ export async function parseShopeeCSV(csv: string): Promise<ShopeeRow[]> {
 }
 
 export async function importShopeeCSV(
-  userId: string,
-  accountId: string,
+  adAccountId: string,
   csvData: ShopeeRow[]
 ) {
   try {
@@ -52,22 +51,42 @@ export async function importShopeeCSV(
     for (const row of csvData) {
       try {
         const campaign = await prisma.campaign.upsert({
-          where: { externalId: row.campaign_id },
+          where: {
+            adAccountId_externalCampaignId: {
+              adAccountId,
+              externalCampaignId: row.campaign_id,
+            },
+          },
           update: {
             name: row.campaign_name,
           },
           create: {
-            externalId: row.campaign_id,
+            externalCampaignId: row.campaign_id,
             name: row.campaign_name,
-            status: "ACTIVE",
-            adAccountId: accountId,
+            adAccountId,
           },
         });
 
-        await prisma.metricSnapshot.create({
-          data: {
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+
+        await prisma.metricSnapshot.upsert({
+          where: {
+            campaignId_date: {
+              campaignId: campaign.id,
+              date: today,
+            },
+          },
+          update: {
+            spend: parseFloat(row.spend || "0"),
+            impressions: parseInt(row.impressions || "0"),
+            clicks: parseInt(row.clicks || "0"),
+            conversions: parseInt(row.conversions || "0"),
+            conversionValue: parseFloat(row.conversion_value || "0"),
+          },
+          create: {
             campaignId: campaign.id,
-            date: new Date(),
+            date: today,
             spend: parseFloat(row.spend || "0"),
             impressions: parseInt(row.impressions || "0"),
             clicks: parseInt(row.clicks || "0"),
@@ -84,7 +103,7 @@ export async function importShopeeCSV(
     }
 
     await prisma.adAccount.update({
-      where: { externalId: accountId },
+      where: { id: adAccountId },
       data: { lastSyncedAt: new Date() },
     });
 

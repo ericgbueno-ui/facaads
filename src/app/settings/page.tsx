@@ -137,6 +137,14 @@ export default function SettingsPage() {
         tokenLabel="Token de Acesso"
         idLabel="ID da Conta de Negócios"
         tokenHint="Obtenha em: business.facebook.com → Configurações → Chaves de app"
+        extra={
+          <MetaQuickConnect
+            onConnected={() => {
+              setShowForm(null);
+              fetchAllAccounts();
+            }}
+          />
+        }
       />
 
       {/* Google Ads Section */}
@@ -233,6 +241,100 @@ export default function SettingsPage() {
         <div className="p-4 rounded-lg bg-green-900 border border-green-700 text-green-100 text-sm">
           {success}
         </div>
+      )}
+    </div>
+  );
+}
+
+function MetaQuickConnect({ onConnected }: { onConnected: () => void }) {
+  const [accounts, setAccounts] = useState<{ id: string; name: string }[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [connectingId, setConnectingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function discover() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/auth/meta/discover");
+      const data = await res.json();
+      if (data.ok) {
+        setAccounts(data.accounts);
+      } else {
+        setError(data.error || "Erro ao buscar contas");
+      }
+    } catch (err) {
+      setError("Erro ao buscar contas");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function connect(id: string, name: string) {
+    setConnectingId(id);
+    setError(null);
+    try {
+      const res = await fetch("/api/auth/meta/connect-default", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accountId: id, accountName: name }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        onConnected();
+      } else {
+        setError(data.error || "Erro ao conectar conta");
+      }
+    } catch (err) {
+      setError("Erro ao conectar conta");
+    } finally {
+      setConnectingId(null);
+    }
+  }
+
+  return (
+    <div className="mb-6 p-4 bg-neutral-800 rounded-md">
+      <div className="flex justify-between items-center mb-3">
+        <p className="text-sm text-neutral-300">Contas já configuradas no sistema</p>
+        <button
+          type="button"
+          onClick={discover}
+          disabled={loading}
+          className="px-3 py-1.5 text-xs rounded-md bg-neutral-700 hover:bg-neutral-600 text-neutral-100 disabled:opacity-50"
+        >
+          {loading ? "Buscando..." : "Buscar contas"}
+        </button>
+      </div>
+
+      {error && <p className="text-sm text-red-400 mb-2">{error}</p>}
+
+      {accounts && accounts.length === 0 && (
+        <p className="text-sm text-neutral-500">Nenhuma conta encontrada no token configurado.</p>
+      )}
+
+      {accounts && accounts.length > 0 && (
+        <div className="space-y-2">
+          {accounts.map((acc) => (
+            <button
+              key={acc.id}
+              type="button"
+              onClick={() => connect(acc.id, acc.name)}
+              disabled={connectingId === acc.id}
+              className="w-full text-left flex justify-between items-center p-3 bg-neutral-700 hover:bg-neutral-600 rounded-md text-sm text-neutral-100 disabled:opacity-50"
+            >
+              <span>
+                {acc.name} <span className="text-neutral-400 font-mono text-xs">({acc.id})</span>
+              </span>
+              <span>{connectingId === acc.id ? "Conectando..." : "Usar esta conta →"}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {!accounts && (
+        <p className="text-xs text-neutral-500">
+          Clique em "Buscar contas" para listar as contas de anúncio disponíveis no token do sistema.
+        </p>
       )}
     </div>
   );
@@ -383,6 +485,7 @@ function PlatformSection({
   tokenLabel,
   idLabel,
   tokenHint,
+  extra,
 }: {
   channel: string;
   icon: string;
@@ -402,6 +505,7 @@ function PlatformSection({
   tokenLabel: string;
   idLabel: string;
   tokenHint: string;
+  extra?: React.ReactNode;
 }) {
   return (
     <div id={`section-${channel}`} className="rounded-lg border border-neutral-800 bg-neutral-900 p-6">
@@ -417,6 +521,8 @@ function PlatformSection({
           {showForm ? "Cancelar" : "+ Conectar Conta"}
         </button>
       </div>
+
+      {showForm && extra}
 
       {/* Connect Form */}
       {showForm && (

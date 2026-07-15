@@ -25,10 +25,9 @@ export async function POST(req: NextRequest) {
     // Create or update Shopee account
     const account = await prisma.adAccount.upsert({
       where: {
-        userId_channel_externalId: {
-          userId: session.user.email,
+        channel_externalAccountId: {
           channel: "SHOPEE",
-          externalId: accountId,
+          externalAccountId: accountId,
         },
       },
       update: {
@@ -36,9 +35,8 @@ export async function POST(req: NextRequest) {
         lastSyncedAt: new Date(),
       },
       create: {
-        userId: session.user.email,
         channel: "SHOPEE",
-        externalId: accountId,
+        externalAccountId: accountId,
         name: accountName,
         lastSyncedAt: new Date(),
       },
@@ -54,7 +52,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const result = await importShopeeCSV(session.user.email, account.externalId, rows);
+    const result = await importShopeeCSV(account.id, rows);
 
     return NextResponse.json({
       ok: true,
@@ -63,7 +61,7 @@ export async function POST(req: NextRequest) {
       account: {
         id: account.id,
         name: account.name,
-        externalId: account.externalId,
+        externalId: account.externalAccountId,
       },
     });
   } catch (err) {
