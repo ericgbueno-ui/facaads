@@ -22,7 +22,7 @@ export default function SettingsPage() {
   const [success, setSuccess] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({ token: "", id: "", name: "" });
-  const [pendingScrollChannel, setPendingScrollChannel] = useState<string | null>(null);
+  const [focusChannel, setFocusChannel] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAllAccounts();
@@ -31,16 +31,14 @@ export default function SettingsPage() {
     const channel = params.get("channel");
     if (channel && ["META", "GOOGLE", "TIKTOK", "SHOPEE"].includes(channel)) {
       setShowForm(channel);
-      setPendingScrollChannel(channel);
+      setFocusChannel(channel);
     }
   }, []);
 
-  useEffect(() => {
-    if (!loading && pendingScrollChannel) {
-      document.getElementById(`section-${pendingScrollChannel}`)?.scrollIntoView({ behavior: "auto", block: "start" });
-      setPendingScrollChannel(null);
-    }
-  }, [loading, pendingScrollChannel]);
+  function clearFocus() {
+    setFocusChannel(null);
+    window.history.replaceState(null, "", "/settings");
+  }
 
   async function fetchAllAccounts() {
     try {
@@ -115,9 +113,18 @@ export default function SettingsPage() {
         </Link>
         <h1 className="text-2xl font-bold text-neutral-100 mb-2">Configurações</h1>
         <p className="text-neutral-400">Conecte suas contas de ads para sincronizar dados</p>
+        {focusChannel && (
+          <button
+            onClick={clearFocus}
+            className="mt-3 text-sm text-blue-400 hover:underline"
+          >
+            Ver todos os canais
+          </button>
+        )}
       </div>
 
       {/* Meta Ads Section */}
+      {(!focusChannel || focusChannel === "META") && (
       <PlatformSection
         channel="META"
         icon="📘"
@@ -146,8 +153,10 @@ export default function SettingsPage() {
           />
         }
       />
+      )}
 
       {/* Google Ads Section */}
+      {(!focusChannel || focusChannel === "GOOGLE") && (
       <PlatformSection
         channel="GOOGLE"
         icon="🔵"
@@ -168,8 +177,10 @@ export default function SettingsPage() {
         idLabel="Customer ID"
         tokenHint="Obtenha em: https://myaccount.google.com/permissions (Google Ads API)"
       />
+      )}
 
       {/* TikTok Ads Section */}
+      {(!focusChannel || focusChannel === "TIKTOK") && (
       <PlatformSection
         channel="TIKTOK"
         icon="🎵"
@@ -190,8 +201,10 @@ export default function SettingsPage() {
         idLabel="Advertiser ID"
         tokenHint="Obtenha em: TikTok Business Center → Settings → Apps → Tokens"
       />
+      )}
 
       {/* Shopee Ads Section */}
+      {(!focusChannel || focusChannel === "SHOPEE") && (
       <ShopeeSection
         accounts={shopeeAccounts}
         loading={loading}
@@ -235,6 +248,7 @@ export default function SettingsPage() {
         connecting={connecting}
         error={error}
       />
+      )}
 
       {/* Success Message */}
       {success && (
