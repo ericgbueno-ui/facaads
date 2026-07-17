@@ -260,9 +260,17 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen">
       <header className="flex items-center justify-between border-b border-slate-200/70 bg-white/70 px-8 py-4 backdrop-blur-xl">
-        <div>
-          <h1 className="bg-gradient-to-r from-indigo-600 via-blue-500 to-cyan-500 bg-clip-text text-lg font-extrabold text-transparent">Painel de Controle</h1>
-          <p className="text-xs text-slate-400">Inicio / {tab === "GERAL" ? "Visao Geral" : channel?.name}</p>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => router.push("/projects")}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-sm font-medium text-slate-600 ring-1 ring-slate-200 shadow-sm transition hover:ring-indigo-300 hover:text-indigo-600"
+          >
+            ← Voltar
+          </button>
+          <div>
+            <h1 className="bg-gradient-to-r from-indigo-600 via-blue-500 to-cyan-500 bg-clip-text text-lg font-extrabold text-transparent">Painel de Controle</h1>
+            <p className="text-xs text-slate-400">Inicio / {tab === "GERAL" ? "Visao Geral" : channel?.name}</p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-semibold ring-1 ${live ? "bg-emerald-50 text-emerald-600 ring-emerald-100 shadow-[0_0_12px_rgba(16,185,129,0.35)]" : "bg-slate-100 text-slate-500 ring-slate-200"}`}>
