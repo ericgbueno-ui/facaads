@@ -1,187 +1,340 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { KpiCard } from "@/components/dashboard/kpi-card";
-import { SpendChart } from "@/components/dashboard/spend-chart";
-import { PeriodSelector } from "@/components/dashboard/period-selector";
-import { ConversionFunnel } from "@/components/dashboard/conversion-funnel";
-import { PeriodType } from "@/lib/dashboard/advanced-queries";
-import { useEffect } from "react";
+import {
+  CHANNELS as DEMO,
+  FORMAT_LABEL,
+  metrics,
+  creativeMetrics,
+} from "@/lib/dashboard/sample-data";
 
-const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
-const number = new Intl.NumberFormat("pt-BR");
+const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+const nf = new Intl.NumberFormat("pt-BR");
+const pct = (v: number) => `${v.toFixed(2)}%`;
+
+type Acct = {
+  key: string; id?: string; name: string; color: string;
+  spend: number; impressions: number; reach: number; clicks: number;
+  msgs: number; leads: number; sales: number; revenue: number;
+  creatives: any[]; status?: string;
+};
+
+function Card({ title, right, children }: any) {
+  return (
+    <section className="rounded-2xl bg-white ring-1 ring-slate-200/70 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.10)]">
+      {title && (
+        <div className="flex items-center justify-between px-6 pt-5 pb-3">
+          <h2 className="text-[15px] font-semibold text-slate-800">{title}</h2>
+          {right}
+        </div>
+      )}
+      <div className="px-6 pb-6 pt-1">{children}</div>
+    </section>
+  );
+}
+
+function Kpi({ label, value, hint, accent = "text-slate-900" }: any) {
+  return (
+    <div className="rounded-2xl bg-white p-5 ring-1 ring-slate-200/70 shadow-[0_8px_24px_-16px_rgba(15,23,42,0.15)]">
+      <div className="text-[12px] font-medium text-slate-500">{label}</div>
+      <div className={`mt-1 text-2xl font-extrabold tracking-tight tabular-nums ${accent}`}>{value}</div>
+      {hint && <div className="mt-0.5 text-[11px] text-slate-400">{hint}</div>}
+    </div>
+  );
+}
+
+function Funnel({ msgs, leads, sales }: { msgs: number; leads: number; sales: number }) {
+  const steps = [
+    { label: "Conversas no WhatsApp", value: msgs, color: "#bfdbfe", ink: "#1e40af" },
+    { label: "Avancaram a conversa", value: leads, color: "#60a5fa", ink: "#0b2f6b" },
+    { label: "Vendas fechadas", value: sales, color: "#2563eb", ink: "#ffffff" },
+  ];
+  return (
+    <div className="flex flex-col items-center gap-2 pt-2">
+      {steps.map((s, i) => (
+        <div key={s.label} className="rounded-xl px-4 py-3 text-center" style={{ width: `${100 - i * 24}%`, background: s.color, color: s.ink }}>
+          <div className="text-[12px] font-medium opacity-90">{s.label}</div>
+          <div className="text-sm font-bold tabular-nums">{msgs ? pct((s.value / msgs) * 100) : "0%"} ({nf.format(s.value)})</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function OverviewTable({ accounts }: { accounts: Acct[] }) {
+  const rows = accounts.map((c) => ({ c, m: metrics(c) }));
+  const tot = accounts.reduce(
+    (a, c) => ({ spend: a.spend + c.spend, impressions: a.impressions + c.impressions, reach: a.reach + c.reach, clicks: a.clicks + c.clicks, msgs: a.msgs + c.msgs, sales: a.sales + c.sales, revenue: a.revenue + c.revenue }),
+    { spend: 0, impressions: 0, reach: 0, clicks: 0, msgs: 0, sales: 0, revenue: 0 }
+  );
+  const tm = metrics(tot);
+  const th = "px-3 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-400";
+  const td = "px-3 py-3 text-right tabular-nums text-slate-700";
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[820px] text-sm">
+        <thead>
+          <tr className="border-b border-slate-100">
+            <th className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">Conta</th>
+            <th className={th}>Gasto</th><th className={th}>Impressoes</th><th className={th}>Alcance</th>
+            <th className={th}>CTR</th><th className={th}>CPC</th><th className={th}>CPM</th>
+            <th className={th}>Conversas WA</th><th className={th}>Vendas</th><th className={th}>CPA</th><th className={th}>ROAS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(({ c, m }) => (
+            <tr key={c.key} className="border-b border-slate-50 hover:bg-slate-50/60">
+              <td className="px-3 py-3"><span className="inline-flex items-center gap-2 font-semibold text-slate-800"><span className="h-2.5 w-2.5 rounded-full" style={{ background: c.color }} />{c.name}</span></td>
+              <td className={td}>{brl.format(c.spend)}</td>
+              <td className={td}>{nf.format(c.impressions)}</td>
+              <td className={td}>{nf.format(c.reach)}</td>
+              <td className={td}>{pct(m.ctr)}</td>
+              <td className={td}>{c.clicks ? brl.format(m.cpc) : "—"}</td>
+              <td className={td}>{c.impressions ? brl.format(m.cpm) : "—"}</td>
+              <td className={`${td} font-semibold text-blue-700`}>{nf.format(c.msgs)}</td>
+              <td className={td}>{nf.format(c.sales)}</td>
+              <td className={td}>{c.sales ? brl.format(m.cpa) : "—"}</td>
+              <td className={`${td} font-semibold ${c.revenue ? (m.roas >= 1 ? "text-emerald-600" : "text-rose-500") : "text-slate-400"}`}>{c.revenue ? `${m.roas.toFixed(2)}x` : "—"}</td>
+            </tr>
+          ))}
+          <tr className="bg-slate-50 font-semibold">
+            <td className="px-3 py-3 text-slate-900">Total</td>
+            <td className={td}>{brl.format(tot.spend)}</td>
+            <td className={td}>{nf.format(tot.impressions)}</td>
+            <td className={td}>{nf.format(tot.reach)}</td>
+            <td className={td}>{pct(tm.ctr)}</td>
+            <td className={td}>{tot.clicks ? brl.format(tm.cpc) : "—"}</td>
+            <td className={td}>{tot.impressions ? brl.format(tm.cpm) : "—"}</td>
+            <td className={`${td} text-blue-700`}>{nf.format(tot.msgs)}</td>
+            <td className={td}>{nf.format(tot.sales)}</td>
+            <td className={td}>{tot.sales ? brl.format(tm.cpa) : "—"}</td>
+            <td className={`${td} ${tot.revenue ? (tm.roas >= 1 ? "text-emerald-600" : "text-rose-500") : "text-slate-400"}`}>{tot.revenue ? `${tm.roas.toFixed(2)}x` : "—"}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ChannelView({ c, onMarkSale }: { c: Acct; onMarkSale: () => void }) {
+  const m = metrics(c);
+  const th = "px-3 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-400";
+  const td = "px-3 py-3 text-right tabular-nums text-slate-700";
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-lg font-bold text-slate-900">{c.name}</h2>
+        {c.id && (
+          <button onClick={onMarkSale} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700">
+            + Marcar venda
+          </button>
+        )}
+      </div>
+      {c.status && c.status !== "ok" && (
+        <div className="rounded-xl bg-amber-50 px-4 py-3 text-sm font-medium text-amber-700 ring-1 ring-amber-100">Sem dados no periodo para esta conta (sem campanha ativa ou billing pendente).</div>
+      )}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+        <Kpi label="Impressoes" value={nf.format(c.impressions)} hint="vezes exibido" />
+        <Kpi label="Alcance" value={nf.format(c.reach)} hint="pessoas unicas" />
+        <Kpi label="CTR" value={pct(m.ctr)} hint="cliques / impressoes" />
+        <Kpi label="CPC" value={c.clicks ? brl.format(m.cpc) : "—"} hint="custo por clique" />
+        <Kpi label="CPM" value={c.impressions ? brl.format(m.cpm) : "—"} hint="por 1.000 impr." />
+        <Kpi label="CPA" value={c.sales ? brl.format(m.cpa) : "—"} hint="custo por venda" accent="text-blue-700" />
+      </div>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <Kpi label="Gasto" value={brl.format(c.spend)} />
+        <Kpi label="Faturamento" value={c.revenue ? brl.format(c.revenue) : "—"} accent="text-emerald-600" hint={c.revenue ? "" : "marque as vendas"} />
+        <Kpi label="ROAS" value={c.revenue ? `${m.roas.toFixed(2)}x` : "—"} accent={c.revenue ? (m.roas >= 1 ? "text-emerald-600" : "text-rose-500") : "text-slate-400"} hint="retorno sobre gasto" />
+        <Kpi label="Conversas WhatsApp" value={nf.format(c.msgs)} accent="text-blue-700" hint={c.msgs ? `${brl.format(c.spend / c.msgs)} por conversa` : ""} />
+      </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+        <Card title="Desempenho por Criativo e Formato">
+          {c.creatives && c.creatives.length ? (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px] text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100">
+                    <th className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">Formato</th>
+                    <th className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">Copy</th>
+                    <th className={th}>Gasto</th><th className={th}>Impr.</th><th className={th}>CTR</th><th className={th}>Conversas</th><th className={th}>Vendas</th><th className={th}>ROAS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {c.creatives.map((cr: any, i: number) => {
+                    const cm = creativeMetrics(cr);
+                    return (
+                      <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/60">
+                        <td className="px-3 py-3"><span className="inline-flex items-center rounded-lg bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-600">{cr.format}</span><span className="ml-2 text-[11px] text-slate-400">{FORMAT_LABEL[cr.format as keyof typeof FORMAT_LABEL]}</span></td>
+                        <td className="px-3 py-3 font-medium text-slate-700">{cr.copy}</td>
+                        <td className={td}>{brl.format(cr.spend)}</td>
+                        <td className={td}>{nf.format(cr.impressions)}</td>
+                        <td className={td}>{pct(cm.ctr)}</td>
+                        <td className={`${td} font-semibold text-blue-700`}>{nf.format(cr.msgs)}</td>
+                        <td className={td}>{nf.format(cr.sales)}</td>
+                        <td className={`${td} font-semibold ${cm.roas >= 1 ? "text-emerald-600" : "text-rose-500"}`}>{cr.spend ? `${cm.roas.toFixed(2)}x` : "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="py-10 text-center text-sm text-slate-400">Quebra por criativo (VID / IMG / CAR / COL) sera exibida quando ativarmos o detalhamento por anuncio.</div>
+          )}
+        </Card>
+        <Card title="Funil da Jornada (WhatsApp)"><Funnel msgs={c.msgs} leads={c.leads} sales={c.sales} /></Card>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [period, setPeriod] = useState<PeriodType>("30d");
-  const [campaigns, setCampaigns] = useState<any[]>([]);
-  const [funnel, setFunnel] = useState<any[]>([]);
-  const [ranking, setRanking] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [projectName, setProjectName] = useState<string>("Projeto");
   const [ready, setReady] = useState(false);
+  const [tab, setTab] = useState<string>("GERAL");
+  const [accounts, setAccounts] = useState<Acct[]>(DEMO as unknown as Acct[]);
+  const [live, setLive] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Exige canal e conta selecionados; sem isso, volta para a seleção
-    const channel = localStorage.getItem("selectedChannel");
-    const accountId = localStorage.getItem("selectedAccount");
+  // modal marcar venda
+  const [saleFor, setSaleFor] = useState<Acct | null>(null);
+  const [amount, setAmount] = useState("");
+  const [phone, setPhone] = useState("");
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
 
-    if (!channel || !accountId) {
-      router.push("/projects");
-      return;
-    }
-    setReady(true);
-
-    const accountNames: Record<string, Record<string, string>> = {
-      META: {
-        "meta-001": "Meta Ads - Conta Principal",
-        "meta-002": "Meta Ads - Conta Secundária",
-        "meta-003": "Meta Ads - Testes",
-      },
-      GOOGLE: {
-        "google-001": "Google Ads - MCC Principal",
-        "google-002": "Google Ads - Performance Max",
-        "google-003": "Google Ads - Search Ads",
-      },
-      TIKTOK: {
-        "tiktok-001": "TikTok Ads - E-commerce",
-        "tiktok-002": "TikTok Ads - Brand Awareness",
-      },
-      SHOPEE: {
-        "shopee-001": "Shopee Ads - Loja Principal",
-        "shopee-002": "Shopee Ads - Loja Secundária",
-      },
-    };
-
-    const name = accountNames[channel]?.[accountId] || `${channel} - ${accountId}`;
-    setProjectName(name);
-  }, []);
-
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      try {
-        const response = await fetch(`/api/dashboard/metrics?period=${period}`);
-        const data = await response.json();
-
-        if (data.ok) {
-          setCampaigns(data.campaigns || []);
-          setFunnel(data.funnel || []);
-          setRanking(data.ranking || []);
-        } else {
-          console.error("API error:", data.error);
-          setCampaigns([]);
-          setFunnel([]);
-          setRanking([]);
+  function load() {
+    setLoading(true);
+    fetch("/api/meta/overview")
+      .then((r) => r.json())
+      .then((j) => {
+        if (j?.ok && Array.isArray(j.accounts) && j.accounts.some((a: Acct) => a.spend > 0 || a.impressions > 0 || a.sales > 0)) {
+          setAccounts(j.accounts);
+          setLive(true);
         }
-      } catch (err) {
-        console.error("Error loading data:", err);
-        setCampaigns([]);
-        setFunnel([]);
-        setRanking([]);
-      }
-      setLoading(false);
-    }
-    loadData();
-  }, [period]);
-
-  const totalSpend = campaigns.reduce((acc, c) => acc + c.spend, 0);
-  const totalConversions = campaigns.reduce((acc, c) => acc + c.conversions, 0);
-  const totalConversionValue = campaigns.reduce((acc, c) => acc + c.conversionValue, 0);
-  const avgCPA = totalConversions > 0 ? totalSpend / totalConversions : null;
-  const roas = totalSpend > 0 ? totalConversionValue / totalSpend : null;
-
-  if (!ready) {
-    return (
-      <div className="text-center text-neutral-400">Redirecionando...</div>
-    );
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }
 
+  useEffect(() => {
+    const channel = typeof window !== "undefined" ? localStorage.getItem("selectedChannel") : null;
+    const accountId = typeof window !== "undefined" ? localStorage.getItem("selectedAccount") : null;
+    if (!channel || !accountId) { router.push("/projects"); return; }
+    setReady(true);
+    load();
+  }, [router]);
+
+  async function submitSale(e: React.FormEvent) {
+    e.preventDefault();
+    if (!saleFor) return;
+    const value = parseFloat(amount.replace(/\./g, "").replace(",", "."));
+    if (!value || value <= 0) { setErr("Informe um valor valido."); return; }
+    setSaving(true); setErr("");
+    try {
+      const r = await fetch("/api/sales", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ account: saleFor.id, accountName: saleFor.name, channel: "META", amount: value, phone: phone || undefined, note: note || undefined }),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j?.error || "Falha ao salvar");
+      setSaleFor(null); setAmount(""); setPhone(""); setNote("");
+      load();
+    } catch (e: any) {
+      setErr(e?.message || "Falha ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const globalFunnel = useMemo(() => accounts.reduce((a, c) => ({ msgs: a.msgs + c.msgs, leads: a.leads + c.leads, sales: a.sales + c.sales }), { msgs: 0, leads: 0, sales: 0 }), [accounts]);
+  const totalSpend = accounts.reduce((a, c) => a + c.spend, 0);
+  const totalRevenue = accounts.reduce((a, c) => a + c.revenue, 0);
+
+  if (!ready) return <div className="flex min-h-[60vh] items-center justify-center text-slate-400">Carregando...</div>;
+  const channel = accounts.find((c) => c.key === tab);
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-neutral-100">Dashboard de Campanhas</h1>
-        <a
-          href={`/api/reports/export-csv?period=${period}&include_offline=true`}
-          download
-          className="rounded-md bg-neutral-800 px-3 py-1.5 text-sm font-medium text-neutral-300 hover:bg-neutral-700"
-        >
-          📥 Baixar CSV
-        </a>
+    <div className="min-h-screen bg-slate-50">
+      <header className="flex items-center justify-between border-b border-slate-200/80 bg-white px-8 py-4">
+        <div>
+          <h1 className="text-lg font-bold text-slate-900">Painel de Controle</h1>
+          <p className="text-xs text-slate-400">Inicio / {tab === "GERAL" ? "Visao Geral" : channel?.name}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-semibold ring-1 ${live ? "bg-emerald-50 text-emerald-600 ring-emerald-100" : "bg-slate-100 text-slate-500 ring-slate-200"}`}>
+            <span className={`h-2 w-2 rounded-full ${live ? "bg-emerald-500" : "bg-slate-400"}`} /> {live ? "Dados ao vivo" : loading ? "Carregando..." : "Demonstracao"}
+          </span>
+          <div className="flex -space-x-2">
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-violet-500 text-xs font-semibold text-white ring-2 ring-white">TO</span>
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-slate-300 text-xs font-semibold text-white ring-2 ring-white">EB</span>
+          </div>
+        </div>
+      </header>
+
+      <div className="border-b border-slate-200/80 bg-white px-8">
+        <div className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto">
+          {[{ key: "GERAL", name: "Visao Geral", color: "#0f172a" } as any, ...accounts].map((t) => {
+            const on = t.key === tab;
+            return (
+              <button key={t.key} onClick={() => setTab(t.key)} className={`relative whitespace-nowrap px-4 py-3 text-sm font-semibold transition ${on ? "text-slate-900" : "text-slate-400 hover:text-slate-600"}`}>
+                <span className="inline-flex items-center gap-2">{t.key !== "GERAL" && <span className="h-2 w-2 rounded-full" style={{ background: t.color }} />}{t.name}</span>
+                {on && <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full" style={{ background: t.color }} />}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <PeriodSelector value={period} onChange={setPeriod} />
-
-      {loading ? (
-        <div className="text-center text-neutral-400">Carregando...</div>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <KpiCard label="Gasto total" value={currency.format(totalSpend)} />
-            <KpiCard label="Conversões" value={number.format(totalConversions)} />
-            <KpiCard label="CPA médio" value={avgCPA !== null ? currency.format(avgCPA) : "—"} />
-            <KpiCard label="ROAS" value={roas !== null ? `${roas.toFixed(2)}x` : "—"} />
+      <main className="mx-auto max-w-[1400px] p-6 lg:p-8">
+        <div className="mb-6 flex flex-wrap items-center gap-3">
+          <span className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-slate-700 ring-1 ring-slate-200 shadow-sm">Ultimos 30 dias</span>
+          <div className="ml-auto">
+            <button className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">Baixar Relatorio</button>
           </div>
+        </div>
 
-          <ConversionFunnel steps={funnel} />
-
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {/* Benchmark Ranking */}
-            <div className="rounded-lg border border-neutral-800 bg-neutral-900">
-              <div className="border-b border-neutral-800 px-4 py-3">
-                <h2 className="text-sm font-medium text-neutral-200">🏆 Campanhas Mais Eficientes (CPA)</h2>
-              </div>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-800 text-left text-neutral-400">
-                    <th className="px-4 py-2 font-normal">#</th>
-                    <th className="px-4 py-2 font-normal">Campanha</th>
-                    <th className="px-4 py-2 font-normal">CPA</th>
-                    <th className="px-4 py-2 font-normal">ROAS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ranking.slice(0, 5).map((r) => (
-                    <tr key={r.campaignName} className="border-b border-neutral-900 text-neutral-200">
-                      <td className="px-4 py-2 text-yellow-400 font-semibold">{r.rank}</td>
-                      <td className="px-4 py-2 text-neutral-300">{r.campaignName}</td>
-                      <td className="px-4 py-2">{currency.format(r.cpa)}</td>
-                      <td className="px-4 py-2 text-green-400">{r.roas.toFixed(2)}x</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+        {tab === "GERAL" ? (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              <Kpi label="Gasto total" value={brl.format(totalSpend)} />
+              <Kpi label="Faturamento total" value={totalRevenue ? brl.format(totalRevenue) : "—"} accent="text-emerald-600" hint={totalRevenue ? "" : "marque as vendas"} />
+              <Kpi label="ROAS geral" value={totalRevenue ? `${(totalRevenue / totalSpend).toFixed(2)}x` : "—"} accent={totalRevenue >= totalSpend ? "text-emerald-600" : "text-rose-500"} />
+              <Kpi label="Conversas no WhatsApp" value={nf.format(globalFunnel.msgs)} accent="text-blue-700" />
             </div>
-
-            {/* Todas as Campanhas */}
-            <div className="rounded-lg border border-neutral-800 bg-neutral-900">
-              <div className="border-b border-neutral-800 px-4 py-3">
-                <h2 className="text-sm font-medium text-neutral-200">📊 Todas as Campanhas</h2>
-              </div>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-800 text-left text-neutral-400">
-                    <th className="px-4 py-2 font-normal">Campanha</th>
-                    <th className="px-4 py-2 font-normal">Gasto</th>
-                    <th className="px-4 py-2 font-normal">CPA</th>
-                    <th className="px-4 py-2 font-normal">ROAS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {campaigns.slice(0, 10).map((c) => (
-                    <tr key={c.id} className="border-b border-neutral-900 text-neutral-200">
-                      <td className="px-4 py-2 truncate text-neutral-300">{c.name}</td>
-                      <td className="px-4 py-2">{currency.format(c.spend)}</td>
-                      <td className="px-4 py-2">{currency.format(c.cpa)}</td>
-                      <td className="px-4 py-2 text-green-400">{c.roas.toFixed(2)}x</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)]">
+              <Card title="Todas as contas"><OverviewTable accounts={accounts} /></Card>
+              <Card title="Funil global (WhatsApp)"><Funnel msgs={globalFunnel.msgs} leads={globalFunnel.leads} sales={globalFunnel.sales} /></Card>
             </div>
           </div>
-        </>
+        ) : (
+          channel && <ChannelView c={channel} onMarkSale={() => { setErr(""); setSaleFor(channel); }} />
+        )}
+
+        <p className="mt-6 text-center text-[11px] text-slate-300">{live ? "Dados reais do Meta Ads (ultimos 30 dias) + vendas marcadas manualmente." : "Dados de demonstracao - conecte as contas para exibir numeros reais."}</p>
+      </main>
+
+      {saleFor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setSaleFor(null)}>
+          <form onClick={(e) => e.stopPropagation()} onSubmit={submitSale} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-bold text-slate-900">Marcar venda</h3>
+            <p className="mt-0.5 text-sm text-slate-500">{saleFor.name}</p>
+            <label className="mt-5 block text-sm font-medium text-slate-600">Valor da venda (R$)</label>
+            <input autoFocus inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500" />
+            <label className="mt-4 block text-sm font-medium text-slate-600">Telefone do cliente (opcional)</label>
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+55 ..." className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500" />
+            <label className="mt-4 block text-sm font-medium text-slate-600">Observacao (opcional)</label>
+            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="ex.: pacote fim de semana" className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500" />
+            {err && <p className="mt-3 text-sm font-medium text-rose-600">{err}</p>}
+            <div className="mt-6 flex justify-end gap-2">
+              <button type="button" onClick={() => setSaleFor(null)} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-100">Cancelar</button>
+              <button type="submit" disabled={saving} className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">{saving ? "Salvando..." : "Registrar venda"}</button>
+            </div>
+          </form>
+        </div>
       )}
     </div>
   );
