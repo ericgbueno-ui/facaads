@@ -108,15 +108,15 @@ export default function SettingsPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <Link href="/projects" className="text-sm text-neutral-400 hover:text-neutral-200 mb-4 inline-block">
+        <Link href="/projects" className="text-sm text-slate-500 hover:text-indigo-600 mb-4 inline-block">
           ← Voltar
         </Link>
-        <h1 className="text-2xl font-bold text-neutral-100 mb-2">Configurações</h1>
-        <p className="text-neutral-400">Conecte suas contas de ads para sincronizar dados</p>
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">Configurações</h1>
+        <p className="text-slate-500">Conecte suas contas de ads para sincronizar dados</p>
         {focusChannel && (
           <button
             onClick={clearFocus}
-            className="mt-3 text-sm text-blue-400 hover:underline"
+            className="mt-3 text-sm font-medium text-indigo-600 hover:underline"
           >
             Ver todos os canais
           </button>
@@ -252,7 +252,7 @@ export default function SettingsPage() {
 
       {/* Success Message */}
       {success && (
-        <div className="p-4 rounded-lg bg-green-900 border border-green-700 text-green-100 text-sm">
+        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-medium">
           {success}
         </div>
       )}
@@ -307,23 +307,23 @@ function MetaQuickConnect({ onConnected }: { onConnected: () => void }) {
   }
 
   return (
-    <div className="mb-6 p-4 bg-neutral-800 rounded-md">
+    <div className="mb-6 p-4 bg-indigo-50/60 ring-1 ring-indigo-100 rounded-xl">
       <div className="flex justify-between items-center mb-3">
-        <p className="text-sm text-neutral-300">Contas já configuradas no sistema</p>
+        <p className="text-sm text-slate-600">Contas já configuradas no sistema</p>
         <button
           type="button"
           onClick={discover}
           disabled={loading}
-          className="px-3 py-1.5 text-xs rounded-md bg-neutral-700 hover:bg-neutral-600 text-neutral-100 disabled:opacity-50"
+          className="px-3 py-1.5 text-xs rounded-lg bg-white ring-1 ring-slate-200 hover:ring-indigo-300 text-slate-700 font-medium disabled:opacity-50"
         >
           {loading ? "Buscando..." : "Buscar contas"}
         </button>
       </div>
 
-      {error && <p className="text-sm text-red-400 mb-2">{error}</p>}
+      {error && <p className="text-sm text-rose-600 mb-2">{error}</p>}
 
       {accounts && accounts.length === 0 && (
-        <p className="text-sm text-neutral-500">Nenhuma conta encontrada no token configurado.</p>
+        <p className="text-sm text-slate-400">Nenhuma conta encontrada no token configurado.</p>
       )}
 
       {accounts && accounts.length > 0 && (
@@ -334,19 +334,19 @@ function MetaQuickConnect({ onConnected }: { onConnected: () => void }) {
               type="button"
               onClick={() => connect(acc.id, acc.name)}
               disabled={connectingId === acc.id}
-              className="w-full text-left flex justify-between items-center p-3 bg-neutral-700 hover:bg-neutral-600 rounded-md text-sm text-neutral-100 disabled:opacity-50"
+              className="w-full text-left flex justify-between items-center p-3 bg-white hover:bg-indigo-50 ring-1 ring-slate-200 hover:ring-indigo-300 rounded-lg text-sm text-slate-800 font-medium disabled:opacity-50 transition"
             >
               <span>
-                {acc.name} <span className="text-neutral-400 font-mono text-xs">({acc.id})</span>
+                {acc.name} <span className="text-slate-400 font-mono text-xs">({acc.id})</span>
               </span>
-              <span>{connectingId === acc.id ? "Conectando..." : "Usar esta conta →"}</span>
+              <span className="text-indigo-600">{connectingId === acc.id ? "Conectando..." : "Usar esta conta →"}</span>
             </button>
           ))}
         </div>
       )}
 
       {!accounts && (
-        <p className="text-xs text-neutral-500">
+        <p className="text-xs text-slate-400">
           Clique em "Buscar contas" para listar as contas de anúncio disponíveis no token do sistema.
         </p>
       )}
@@ -395,15 +395,15 @@ function ShopeeSection({
   };
 
   return (
-    <div id="section-SHOPEE" className="rounded-lg border border-neutral-800 bg-neutral-900 p-6">
+    <div id="section-SHOPEE" className="rounded-2xl bg-white/80 backdrop-blur-sm ring-1 ring-slate-200/70 shadow-[0_8px_30px_-18px_rgba(15,23,42,0.15)] p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-neutral-100">🛍️ Shopee Ads</h2>
-          <p className="text-sm text-neutral-400">Shopee Seller Center</p>
+          <h2 className="text-lg font-semibold text-slate-900">🛍️ Shopee Ads</h2>
+          <p className="text-sm text-slate-500">Shopee Seller Center</p>
         </div>
         <button
           onClick={onToggleForm}
-          className="px-4 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-sm font-medium text-neutral-100 transition-all"
+          className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-medium text-slate-700 transition-all"
         >
           {showForm ? "Cancelar" : "+ Importar CSV"}
         </button>
@@ -416,40 +416,40 @@ function ShopeeSection({
             e.preventDefault();
             handleImport();
           }}
-          className="space-y-4 mb-6 p-4 bg-neutral-800 rounded-md"
+          className="space-y-4 mb-6 p-4 bg-orange-50/60 ring-1 ring-orange-100 rounded-xl"
         >
           <div>
-            <label className="block text-sm text-neutral-300 mb-1">Nome da Loja</label>
+            <label className="block text-sm text-slate-600 mb-1">Nome da Loja</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Minha Loja Shopee"
-              className="w-full px-3 py-2 rounded-md border border-neutral-700 bg-neutral-700 text-neutral-100 text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm text-neutral-300 mb-1">Arquivo CSV</label>
+            <label className="block text-sm text-slate-600 mb-1">Arquivo CSV</label>
             <input
               type="file"
               accept=".csv"
               onChange={handleFileChange}
-              className="w-full px-3 py-2 rounded-md border border-neutral-700 bg-neutral-700 text-neutral-100 text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100"
               required
             />
-            <p className="text-xs text-neutral-500 mt-1">
+            <p className="text-xs text-slate-400 mt-1">
               Colunas esperadas: campaign_name, campaign_id, spend, impressions, clicks, conversions, conversion_value
             </p>
           </div>
 
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-rose-600">{error}</p>}
 
           <button
             type="submit"
             disabled={connecting || !csvFile}
-            className="w-full px-4 py-2 rounded-md bg-neutral-100 text-neutral-900 text-sm font-medium disabled:opacity-50 hover:bg-neutral-200"
+            className="w-full px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white text-sm font-semibold shadow-md shadow-orange-500/25 disabled:opacity-50 transition"
           >
             {connecting ? "Importando..." : "Importar"}
           </button>
@@ -458,17 +458,17 @@ function ShopeeSection({
 
       {/* Accounts List */}
       {loading ? (
-        <p className="text-neutral-400">Carregando...</p>
+        <p className="text-slate-400">Carregando...</p>
       ) : accounts.length === 0 ? (
-        <p className="text-neutral-400 text-sm">Nenhuma loja importada</p>
+        <p className="text-slate-400 text-sm">Nenhuma loja importada</p>
       ) : (
         <div className="space-y-2">
           {accounts.map((account) => (
-            <div key={account.id} className="p-3 bg-neutral-800 rounded-md">
-              <p className="text-neutral-100 font-medium">{account.name}</p>
-              <p className="text-xs text-neutral-500">ID: {account.externalId}</p>
+            <div key={account.id} className="p-3 bg-slate-50 ring-1 ring-slate-100 rounded-xl">
+              <p className="text-slate-900 font-medium">{account.name}</p>
+              <p className="text-xs text-slate-400">ID: {account.externalId}</p>
               {account.lastSyncedAt && (
-                <p className="text-xs text-neutral-500">
+                <p className="text-xs text-slate-400">
                   Última importação: {new Date(account.lastSyncedAt).toLocaleString("pt-BR")}
                 </p>
               )}
@@ -524,15 +524,15 @@ function PlatformSection({
   const [showToken, setShowToken] = useState(false);
 
   return (
-    <div id={`section-${channel}`} className="rounded-lg border border-neutral-800 bg-neutral-900 p-6">
+    <div id={`section-${channel}`} className="rounded-2xl bg-white/80 backdrop-blur-sm ring-1 ring-slate-200/70 shadow-[0_8px_30px_-18px_rgba(15,23,42,0.15)] p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-neutral-100">{icon} {title}</h2>
-          <p className="text-sm text-neutral-400">{description}</p>
+          <h2 className="text-lg font-semibold text-slate-900">{icon} {title}</h2>
+          <p className="text-sm text-slate-500">{description}</p>
         </div>
         <button
           onClick={onToggleForm}
-          className="px-4 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-sm font-medium text-neutral-100 transition-all"
+          className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm font-medium text-slate-700 transition-all"
         >
           {showForm ? "Cancelar" : "+ Conectar Conta"}
         </button>
@@ -542,59 +542,59 @@ function PlatformSection({
 
       {/* Connect Form */}
       {showForm && (
-        <form onSubmit={onSubmit} className="space-y-4 mb-6 p-4 bg-neutral-800 rounded-md">
+        <form onSubmit={onSubmit} className="space-y-4 mb-6 p-4 bg-indigo-50/60 ring-1 ring-indigo-100 rounded-xl">
           <div>
-            <label className="block text-sm text-neutral-300 mb-1">{tokenLabel}</label>
+            <label className="block text-sm text-slate-600 mb-1">{tokenLabel}</label>
             <div className="relative">
               <input
                 type={showToken ? "text" : "password"}
                 value={formData.token}
                 onChange={(e) => setFormData({ ...formData, token: e.target.value })}
                 placeholder={tokenPlaceholder}
-                className="w-full px-3 py-2 pr-10 rounded-md border border-neutral-700 bg-neutral-700 text-neutral-100 text-sm"
+                className="w-full px-3 py-2 pr-10 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowToken(!showToken)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-200"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
                 {showToken ? "👁️" : "👁️‍🗨️"}
               </button>
             </div>
-            <p className="text-xs text-neutral-500 mt-1">{tokenHint}</p>
+            <p className="text-xs text-slate-400 mt-1">{tokenHint}</p>
           </div>
 
           <div>
-            <label className="block text-sm text-neutral-300 mb-1">{idLabel}</label>
+            <label className="block text-sm text-slate-600 mb-1">{idLabel}</label>
             <input
               type="text"
               value={formData.id}
               onChange={(e) => setFormData({ ...formData, id: e.target.value })}
               placeholder={idPlaceholder}
-              className="w-full px-3 py-2 rounded-md border border-neutral-700 bg-neutral-700 text-neutral-100 text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm text-neutral-300 mb-1">Nome da Conta</label>
+            <label className="block text-sm text-slate-600 mb-1">Nome da Conta</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Minha Conta"
-              className="w-full px-3 py-2 rounded-md border border-neutral-700 bg-neutral-700 text-neutral-100 text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-900 text-sm outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
               required
             />
           </div>
 
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-rose-600">{error}</p>}
 
           <button
             type="submit"
             disabled={connecting}
-            className="w-full px-4 py-2 rounded-md bg-neutral-100 text-neutral-900 text-sm font-medium disabled:opacity-50 hover:bg-neutral-200"
+            className="w-full px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-500 hover:to-blue-400 text-white text-sm font-semibold shadow-md shadow-indigo-500/25 disabled:opacity-50 transition"
           >
             {connecting ? "Conectando..." : "Conectar"}
           </button>
@@ -603,17 +603,17 @@ function PlatformSection({
 
       {/* Accounts List */}
       {loading ? (
-        <p className="text-neutral-400">Carregando...</p>
+        <p className="text-slate-400">Carregando...</p>
       ) : accounts.length === 0 ? (
-        <p className="text-neutral-400 text-sm">Nenhuma conta conectada</p>
+        <p className="text-slate-400 text-sm">Nenhuma conta conectada</p>
       ) : (
         <div className="space-y-2">
           {accounts.map((account) => (
-            <div key={account.id} className="p-3 bg-neutral-800 rounded-md">
-              <p className="text-neutral-100 font-medium">{account.name}</p>
-              <p className="text-xs text-neutral-500">ID: {account.externalId}</p>
+            <div key={account.id} className="p-3 bg-slate-50 ring-1 ring-slate-100 rounded-xl">
+              <p className="text-slate-900 font-medium">{account.name}</p>
+              <p className="text-xs text-slate-400">ID: {account.externalId}</p>
               {account.lastSyncedAt && (
-                <p className="text-xs text-neutral-500">
+                <p className="text-xs text-slate-400">
                   Última sincronização: {new Date(account.lastSyncedAt).toLocaleString("pt-BR")}
                 </p>
               )}

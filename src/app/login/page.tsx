@@ -35,51 +35,58 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-neutral-950 px-4">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-sky-50 px-4">
+      <div className="aurora-blob pointer-events-none absolute -top-32 -left-24 h-80 w-80 rounded-full bg-gradient-to-tr from-indigo-400/40 to-blue-300/30 blur-3xl" />
+      <div className="aurora-blob pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-gradient-to-tr from-cyan-300/40 to-emerald-300/30 blur-3xl" style={{ animationDelay: "4s" }} />
+
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-sm space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-8"
+        className="relative w-full max-w-sm space-y-5 rounded-3xl border border-white/60 bg-white/80 p-8 shadow-[0_20px_60px_-15px_rgba(79,70,229,0.25)] backdrop-blur-xl"
       >
-        <h1 className="text-xl font-semibold text-neutral-100">Hergé</h1>
-        <p className="text-sm text-neutral-400">Entrar no painel</p>
+        <div>
+          <h1 className="bg-gradient-to-r from-indigo-600 via-blue-500 to-cyan-500 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent">
+            Hergé
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">Entrar no painel</p>
+        </div>
 
-        <div className="space-y-1">
-          <label className="text-sm text-neutral-300">Email</label>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-slate-600">Email</label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-neutral-100"
+            className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
           />
         </div>
 
-        <div className="space-y-1">
-          <label className="text-sm text-neutral-300">Senha</label>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-slate-600">Senha</label>
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 pr-10 text-neutral-100"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 pr-10 text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-200"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
             >
               {showPassword ? "👁️" : "👁️‍🗨️"}
             </button>
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm font-medium text-rose-600">{error}</p>}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-md bg-neutral-100 px-3 py-2 font-medium text-neutral-900 disabled:opacity-50"
+          className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-blue-500 px-3.5 py-2.5 font-semibold text-white shadow-lg shadow-indigo-500/30 transition hover:from-indigo-500 hover:to-blue-400 hover:shadow-indigo-500/50 disabled:opacity-50"
         >
           {loading ? "Entrando..." : "Entrar"}
         </button>

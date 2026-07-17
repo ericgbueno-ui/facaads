@@ -22,7 +22,7 @@ type Acct = {
 
 function Card({ title, right, children }: any) {
   return (
-    <section className="rounded-2xl bg-white ring-1 ring-slate-200/70 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.10)]">
+    <section className="rounded-2xl bg-white/80 backdrop-blur-sm ring-1 ring-slate-200/70 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(79,70,229,0.10)] transition hover:ring-indigo-200/70">
       {title && (
         <div className="flex items-center justify-between px-6 pt-5 pb-3">
           <h2 className="text-[15px] font-semibold text-slate-800">{title}</h2>
@@ -36,7 +36,7 @@ function Card({ title, right, children }: any) {
 
 function Kpi({ label, value, hint, accent = "text-slate-900" }: any) {
   return (
-    <div className="rounded-2xl bg-white p-5 ring-1 ring-slate-200/70 shadow-[0_8px_24px_-16px_rgba(15,23,42,0.15)]">
+    <div className="rounded-2xl bg-white/80 backdrop-blur-sm p-5 ring-1 ring-slate-200/70 shadow-[0_8px_24px_-16px_rgba(79,70,229,0.20)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_30px_-14px_rgba(79,70,229,0.30)]">
       <div className="text-[12px] font-medium text-slate-500">{label}</div>
       <div className={`mt-1 text-2xl font-extrabold tracking-tight tabular-nums ${accent}`}>{value}</div>
       {hint && <div className="mt-0.5 text-[11px] text-slate-400">{hint}</div>}
@@ -126,7 +126,7 @@ function ChannelView({ c, onMarkSale }: { c: Acct; onMarkSale: () => void }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-bold text-slate-900">{c.name}</h2>
         {c.id && (
-          <button onClick={onMarkSale} className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700">
+          <button onClick={onMarkSale} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 transition hover:from-emerald-500 hover:to-teal-400">
             + Marcar venda
           </button>
         )}
@@ -258,26 +258,26 @@ export default function DashboardPage() {
   const channel = accounts.find((c) => c.key === tab);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="flex items-center justify-between border-b border-slate-200/80 bg-white px-8 py-4">
+    <div className="min-h-screen">
+      <header className="flex items-center justify-between border-b border-slate-200/70 bg-white/70 px-8 py-4 backdrop-blur-xl">
         <div>
-          <h1 className="text-lg font-bold text-slate-900">Painel de Controle</h1>
+          <h1 className="bg-gradient-to-r from-indigo-600 via-blue-500 to-cyan-500 bg-clip-text text-lg font-extrabold text-transparent">Painel de Controle</h1>
           <p className="text-xs text-slate-400">Inicio / {tab === "GERAL" ? "Visao Geral" : channel?.name}</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-semibold ring-1 ${live ? "bg-emerald-50 text-emerald-600 ring-emerald-100" : "bg-slate-100 text-slate-500 ring-slate-200"}`}>
-            <span className={`h-2 w-2 rounded-full ${live ? "bg-emerald-500" : "bg-slate-400"}`} /> {live ? "Dados ao vivo" : loading ? "Carregando..." : "Demonstracao"}
+          <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-semibold ring-1 ${live ? "bg-emerald-50 text-emerald-600 ring-emerald-100 shadow-[0_0_12px_rgba(16,185,129,0.35)]" : "bg-slate-100 text-slate-500 ring-slate-200"}`}>
+            <span className={`h-2 w-2 rounded-full ${live ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} /> {live ? "Dados ao vivo" : loading ? "Carregando..." : "Demonstracao"}
           </span>
           <div className="flex -space-x-2">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-violet-500 text-xs font-semibold text-white ring-2 ring-white">TO</span>
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-slate-300 text-xs font-semibold text-white ring-2 ring-white">EB</span>
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-500 text-xs font-semibold text-white ring-2 ring-white">TO</span>
+            <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-slate-400 to-slate-300 text-xs font-semibold text-white ring-2 ring-white">EB</span>
           </div>
         </div>
       </header>
 
-      <div className="border-b border-slate-200/80 bg-white px-8">
+      <div className="border-b border-slate-200/70 bg-white/60 px-8 backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto">
-          {[{ key: "GERAL", name: "Visao Geral", color: "#0f172a" } as any, ...accounts].map((t) => {
+          {[{ key: "GERAL", name: "Visao Geral", color: "#4f46e5" } as any, ...accounts].map((t) => {
             const on = t.key === tab;
             return (
               <button key={t.key} onClick={() => setTab(t.key)} className={`relative whitespace-nowrap px-4 py-3 text-sm font-semibold transition ${on ? "text-slate-900" : "text-slate-400 hover:text-slate-600"}`}>
@@ -291,9 +291,9 @@ export default function DashboardPage() {
 
       <main className="mx-auto max-w-[1400px] p-6 lg:p-8">
         <div className="mb-6 flex flex-wrap items-center gap-3">
-          <span className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-medium text-slate-700 ring-1 ring-slate-200 shadow-sm">Ultimos 30 dias</span>
+          <span className="inline-flex items-center gap-2 rounded-xl bg-white/80 backdrop-blur-sm px-4 py-2.5 text-sm font-medium text-slate-700 ring-1 ring-slate-200 shadow-sm">Ultimos 30 dias</span>
           <div className="ml-auto">
-            <button className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">Baixar Relatorio</button>
+            <button className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-500 hover:to-blue-400 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition">Baixar Relatorio</button>
           </div>
         </div>
 
@@ -318,20 +318,20 @@ export default function DashboardPage() {
       </main>
 
       {saleFor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" onClick={() => setSaleFor(null)}>
-          <form onClick={(e) => e.stopPropagation()} onSubmit={submitSale} className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm" onClick={() => setSaleFor(null)}>
+          <form onClick={(e) => e.stopPropagation()} onSubmit={submitSale} className="w-full max-w-md rounded-2xl bg-white/95 backdrop-blur-xl p-6 shadow-[0_30px_80px_-20px_rgba(79,70,229,0.35)] ring-1 ring-white/60">
             <h3 className="text-lg font-bold text-slate-900">Marcar venda</h3>
             <p className="mt-0.5 text-sm text-slate-500">{saleFor.name}</p>
             <label className="mt-5 block text-sm font-medium text-slate-600">Valor da venda (R$)</label>
-            <input autoFocus inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500" />
+            <input autoFocus inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100" />
             <label className="mt-4 block text-sm font-medium text-slate-600">Telefone do cliente (opcional)</label>
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+55 ..." className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500" />
+            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+55 ..." className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100" />
             <label className="mt-4 block text-sm font-medium text-slate-600">Observacao (opcional)</label>
-            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="ex.: pacote fim de semana" className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none focus:border-blue-500" />
+            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="ex.: pacote fim de semana" className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100" />
             {err && <p className="mt-3 text-sm font-medium text-rose-600">{err}</p>}
             <div className="mt-6 flex justify-end gap-2">
               <button type="button" onClick={() => setSaleFor(null)} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-100">Cancelar</button>
-              <button type="submit" disabled={saving} className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60">{saving ? "Salvando..." : "Registrar venda"}</button>
+              <button type="submit" disabled={saving} className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 hover:from-emerald-500 hover:to-teal-400 disabled:opacity-60">{saving ? "Salvando..." : "Registrar venda"}</button>
             </div>
           </form>
         </div>

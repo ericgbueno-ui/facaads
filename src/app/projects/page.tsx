@@ -16,29 +16,34 @@ const CHANNELS = [
     name: "Meta Ads",
     icon: "📘",
     description: "Facebook & Instagram Ads",
+    gradient: "from-blue-500 to-indigo-500",
+    ring: "hover:ring-blue-200",
   },
   {
     id: "GOOGLE",
     name: "Google Ads",
     icon: "🔵",
     description: "Google Search & Display",
+    gradient: "from-emerald-500 to-teal-500",
+    ring: "hover:ring-emerald-200",
   },
   {
     id: "TIKTOK",
     name: "TikTok Ads",
     icon: "🎵",
     description: "TikTok Business Center",
+    gradient: "from-sky-500 to-cyan-500",
+    ring: "hover:ring-sky-200",
   },
   {
     id: "SHOPEE",
     name: "Shopee Ads",
     icon: "🛍️",
     description: "Shopee Seller Center",
+    gradient: "from-orange-500 to-amber-500",
+    ring: "hover:ring-orange-200",
   },
 ];
-
-// No more mock accounts - all platforms use real data
-const MOCK_ACCOUNTS: Record<string, Array<{ id: string; name: string; businessId: string }>> = {};
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -85,27 +90,32 @@ export default function ProjectsPage() {
     : [];
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 px-6 py-12">
-      <div className="max-w-4xl mx-auto">
+    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-indigo-50 via-white to-sky-50 px-6 py-12 text-slate-900">
+      <div className="aurora-blob pointer-events-none absolute -top-40 right-0 h-96 w-96 rounded-full bg-gradient-to-tr from-indigo-400/30 to-cyan-300/30 blur-3xl" />
+      <div className="aurora-blob pointer-events-none absolute bottom-0 -left-32 h-80 w-80 rounded-full bg-gradient-to-tr from-emerald-300/30 to-blue-300/30 blur-3xl" style={{ animationDelay: "3s" }} />
+
+      <div className="relative max-w-4xl mx-auto">
         {/* Header with Settings Link */}
         <div className="mb-12 flex justify-between items-start">
           <div>
-            <h1 className="text-4xl font-bold mb-2">Hergé</h1>
-            <p className="text-lg text-neutral-400">
+            <h1 className="bg-gradient-to-r from-indigo-600 via-blue-500 to-cyan-500 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent mb-2">
+              Hergé
+            </h1>
+            <p className="text-lg text-slate-500">
               {selectedChannel ? "Selecione uma conta" : "Selecione o canal de ads"}
             </p>
           </div>
           <div className="flex gap-2">
             <Link
               href="/meta-ads"
-              className="px-4 py-2 rounded-md bg-blue-900 hover:bg-blue-800 text-sm font-medium text-blue-100 transition-all"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-500 hover:to-indigo-400 text-sm font-semibold text-white shadow-md shadow-blue-500/25 transition-all"
               title="Dashboard em tempo real do Meta Ads"
             >
               📘 Meta Ads Dashboard
             </Link>
             <Link
               href="/settings"
-              className="px-4 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-sm font-medium text-neutral-300 transition-all"
+              className="px-4 py-2 rounded-xl bg-white ring-1 ring-slate-200 hover:ring-indigo-300 text-sm font-medium text-slate-600 shadow-sm transition-all"
             >
               ⚙️ Configurações
             </Link>
@@ -120,12 +130,14 @@ export default function ProjectsPage() {
               <button
                 key={channel.id}
                 onClick={() => setSelectedChannel(channel.id)}
-                className="text-left p-8 rounded-lg border border-neutral-800 bg-neutral-900 hover:border-neutral-600 hover:bg-neutral-800 transition-all"
+                className={`group text-left p-8 rounded-2xl bg-white/80 backdrop-blur-sm ring-1 ring-slate-200/70 shadow-[0_8px_30px_-15px_rgba(15,23,42,0.15)] transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-20px_rgba(79,70,229,0.35)] ${channel.ring}`}
               >
-                <div className="text-4xl mb-4">{channel.icon}</div>
-                <h2 className="text-2xl font-semibold mb-2">{channel.name}</h2>
-                <p className="text-neutral-400">{channel.description}</p>
-                <div className="mt-6 text-neutral-600">→</div>
+                <div className={`inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${channel.gradient} text-3xl shadow-md mb-4`}>
+                  {channel.icon}
+                </div>
+                <h2 className="text-2xl font-bold text-slate-900 mb-1">{channel.name}</h2>
+                <p className="text-slate-500">{channel.description}</p>
+                <div className="mt-6 text-slate-300 transition group-hover:translate-x-1 group-hover:text-indigo-500">→</div>
               </button>
             ))}
           </div>
@@ -135,7 +147,7 @@ export default function ProjectsPage() {
             <div className="mb-6 flex gap-2">
               <button
                 onClick={() => setSelectedChannel(null)}
-                className="px-4 py-2 text-sm bg-neutral-800 hover:bg-neutral-700 rounded-md transition-all"
+                className="px-4 py-2 text-sm bg-white ring-1 ring-slate-200 hover:ring-indigo-300 rounded-xl shadow-sm transition-all text-slate-600"
               >
                 ← Voltar uma seção
               </button>
@@ -145,22 +157,22 @@ export default function ProjectsPage() {
                   localStorage.removeItem("selectedAccount");
                   setSelectedChannel(null);
                 }}
-                className="px-4 py-2 text-sm bg-neutral-700 hover:bg-neutral-600 rounded-md transition-all text-neutral-300"
+                className="px-4 py-2 text-sm bg-slate-100 hover:bg-slate-200 rounded-xl transition-all text-slate-600"
               >
                 🏠 Voltar para o início
               </button>
             </div>
 
             {loadingMeta && selectedChannel === "META" ? (
-              <p className="text-neutral-400">Carregando contas...</p>
+              <p className="text-slate-400">Carregando contas...</p>
             ) : accounts.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-neutral-400 mb-4">
+                <p className="text-slate-500 mb-4">
                   Nenhuma conta {CHANNELS.find((c) => c.id === selectedChannel)?.name} conectada
                 </p>
                 <Link
                   href={`/settings?channel=${selectedChannel}`}
-                  className="inline-block px-4 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-sm font-medium text-neutral-300 transition-all"
+                  className="inline-block px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-500 hover:to-blue-400 text-sm font-semibold text-white shadow-md shadow-indigo-500/25 transition-all"
                 >
                   Conectar conta {CHANNELS.find((c) => c.id === selectedChannel)?.name}
                 </Link>
@@ -176,16 +188,16 @@ export default function ProjectsPage() {
                         selectedChannel
                       )
                     }
-                    className="w-full text-left p-4 rounded-lg border border-neutral-800 bg-neutral-900 hover:border-neutral-600 hover:bg-neutral-800 transition-all"
+                    className="group w-full text-left p-4 rounded-2xl bg-white/80 backdrop-blur-sm ring-1 ring-slate-200/70 shadow-sm hover:ring-indigo-300 hover:shadow-md transition-all"
                   >
                     <div className="flex justify-between items-center">
                       <div>
-                        <h3 className="text-lg font-semibold">{account.name}</h3>
-                        <p className="text-xs text-neutral-500 font-mono">
+                        <h3 className="text-lg font-semibold text-slate-900">{account.name}</h3>
+                        <p className="text-xs text-slate-400 font-mono">
                           ID: {account.externalId}
                         </p>
                       </div>
-                      <div className="text-neutral-600">→</div>
+                      <div className="text-slate-300 transition group-hover:translate-x-1 group-hover:text-indigo-500">→</div>
                     </div>
                   </button>
                 ))}
@@ -196,10 +208,10 @@ export default function ProjectsPage() {
 
         {/* Or create new */}
         {!selectedChannel && (
-          <div className="mt-12 p-6 rounded-lg border border-dashed border-neutral-700 text-center">
-            <p className="text-neutral-400">
+          <div className="mt-12 p-6 rounded-2xl border border-dashed border-indigo-200 bg-white/60 backdrop-blur-sm text-center">
+            <p className="text-slate-500">
               Não vê sua conta? <br />
-              <Link href="/settings" className="text-blue-400 hover:underline">
+              <Link href="/settings" className="font-medium text-indigo-600 hover:underline">
                 Configure uma nova conta em Configurações
               </Link>
             </p>
