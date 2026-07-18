@@ -17,7 +17,7 @@ const createIntegrationSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { companyId: string } }
+  { params }: { params: Promise<{ companyId: string }> }
 ) {
   const authResult = await requireAuth(request);
   if (authResult.error) {
@@ -25,8 +25,9 @@ export async function GET(
   }
 
   try {
+    const { companyId } = await params;
     const integrations = await prisma.companyIntegration.findMany({
-      where: { companyId: params.companyId },
+      where: { companyId },
       select: {
         id: true,
         type: true,
@@ -57,7 +58,7 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { companyId: string } }
+  { params }: { params: Promise<{ companyId: string }> }
 ) {
   const authResult = await requireAuth(request);
   if (authResult.error) {
@@ -65,12 +66,13 @@ export async function POST(
   }
 
   try {
+    const { companyId } = await params;
     const body = await request.json();
     const data = createIntegrationSchema.parse(body);
 
     // Verificar que company existe
     const company = await prisma.company.findUnique({
-      where: { id: params.companyId },
+      where: { id: companyId },
     });
 
     if (!company) {
@@ -84,7 +86,7 @@ export async function POST(
     const existing = await prisma.companyIntegration.findUnique({
       where: {
         companyId_type: {
-          companyId: params.companyId,
+          companyId,
           type: data.type,
         },
       },
@@ -100,7 +102,7 @@ export async function POST(
     // Criar integração
     const integration = await prisma.companyIntegration.create({
       data: {
-        companyId: params.companyId,
+        companyId,
         type: data.type,
         name: data.name,
         status: "connected",

@@ -8,7 +8,7 @@ import { requireAuth } from "@/lib/auth-middleware";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { companyId: string } }
+  { params }: { params: Promise<{ companyId: string }> }
 ) {
   const authResult = await requireAuth(request);
   if (authResult.error) {
@@ -16,6 +16,7 @@ export async function POST(
   }
 
   try {
+    const { companyId } = await params;
     const { integrationId, type } = await request.json();
 
     const integration = await prisma.companyIntegration.findUnique({

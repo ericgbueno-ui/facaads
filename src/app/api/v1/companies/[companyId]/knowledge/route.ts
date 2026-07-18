@@ -19,7 +19,7 @@ const updateKnowledgeSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ companyId: string }> }
 ) {
   const authResult = await requireAuth(request);
   if (authResult.error) {
@@ -27,8 +27,9 @@ export async function GET(
   }
 
   try {
+    const { companyId } = await params;
     const knowledge = await prisma.companyKnowledge.findUnique({
-      where: { companyId: params.id },
+      where: { companyId },
     });
 
     if (!knowledge) {
@@ -74,7 +75,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ companyId: string }> }
 ) {
   const authResult = await requireAuth(request);
   if (authResult.error) {
@@ -82,11 +83,12 @@ export async function PUT(
   }
 
   try {
+    const { companyId } = await params;
     const body = await request.json();
     const data = updateKnowledgeSchema.parse(body);
 
     const knowledge = await prisma.companyKnowledge.upsert({
-      where: { companyId: params.id },
+      where: { companyId },
       update: {
         websiteUrl: data.websiteUrl,
         instagramHandle: data.instagramHandle,
@@ -97,7 +99,7 @@ export async function PUT(
         services: data.services,
       },
       create: {
-        companyId: params.id,
+        companyId,
         websiteUrl: data.websiteUrl,
         instagramHandle: data.instagramHandle,
         mission: data.mission,
