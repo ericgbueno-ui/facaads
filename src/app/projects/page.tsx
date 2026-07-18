@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 interface ConnectedAccount {
   id: string;
@@ -15,6 +16,7 @@ const CHANNELS = [
     id: "META",
     name: "Meta Ads",
     icon: "📘",
+    image: "/images/icon_meta.webp",
     description: "Facebook & Instagram Ads",
     gradient: "from-blue-500 to-indigo-500",
     ring: "hover:ring-blue-200",
@@ -23,6 +25,7 @@ const CHANNELS = [
     id: "GOOGLE",
     name: "Google Ads",
     icon: "🔵",
+    image: "/images/icon_google-ads-640x640.webp",
     description: "Google Search & Display",
     gradient: "from-emerald-500 to-teal-500",
     ring: "hover:ring-emerald-200",
@@ -31,6 +34,7 @@ const CHANNELS = [
     id: "TIKTOK",
     name: "TikTok Ads",
     icon: "🎵",
+    image: "/images/icon_tik-tok-ads.webp",
     description: "TikTok Business Center",
     gradient: "from-sky-500 to-cyan-500",
     ring: "hover:ring-sky-200",
@@ -39,6 +43,7 @@ const CHANNELS = [
     id: "SHOPEE",
     name: "Shopee Ads",
     icon: "🛍️",
+    image: "/images/icon_shopee-ads.webp",
     description: "Shopee Seller Center",
     gradient: "from-orange-500 to-amber-500",
     ring: "hover:ring-orange-200",
@@ -140,8 +145,14 @@ export default function ProjectsPage() {
                 onClick={() => setSelectedChannel(channel.id)}
                 className={`group text-left p-8 rounded-2xl bg-white/80 backdrop-blur-sm ring-1 ring-slate-200/70 shadow-[0_8px_30px_-15px_rgba(15,23,42,0.15)] transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-20px_rgba(79,70,229,0.35)] ${channel.ring}`}
               >
-                <div className={`inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${channel.gradient} text-3xl shadow-md mb-4`}>
-                  {channel.icon}
+                <div className="mb-4">
+                  <Image
+                    src={channel.image}
+                    alt={channel.name}
+                    width={56}
+                    height={56}
+                    className="rounded-2xl shadow-md"
+                  />
                 </div>
                 <h2 className="text-2xl font-bold text-slate-900 mb-1">{channel.name}</h2>
                 <p className="text-slate-500">{channel.description}</p>
