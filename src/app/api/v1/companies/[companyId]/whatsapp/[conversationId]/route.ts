@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { companyId: string; conversationId: string } }
+  { params }: { params: Promise<{ companyId: string; conversationId: string }> }
 ) {
   try {
     const session = await auth();
@@ -77,7 +77,7 @@ export async function GET(
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { companyId: string; conversationId: string } }
+  { params }: { params: Promise<{ companyId: string; conversationId: string }> }
 ) {
   try {
     const session = await auth();

@@ -9,7 +9,7 @@ import { generateCSV, generateHTML } from "@/lib/reports/generate";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ companyId: string }> }
 ) {
   const authResult = await requireAuth(request);
   if (authResult.error) {
@@ -17,6 +17,7 @@ export async function GET(
   }
 
   try {
+    const { companyId } = await params;
     const { searchParams } = new URL(request.url);
     const format = searchParams.get("format") || "csv"; // csv, pdf, excel
     const startDate = searchParams.get("startDate");
@@ -24,7 +25,7 @@ export async function GET(
 
     // Buscar empresa
     const company = await prisma.company.findUnique({
-      where: { id: params.id },
+      where: { id: companyId },
     });
 
     if (!company) {

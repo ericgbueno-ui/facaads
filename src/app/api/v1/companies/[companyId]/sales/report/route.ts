@@ -8,7 +8,7 @@ import { requireAuth } from "@/lib/auth-middleware";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ companyId: string }> }
 ) {
   const authResult = await requireAuth(request);
   if (authResult.error) {
@@ -16,12 +16,13 @@ export async function GET(
   }
 
   try {
+    const { companyId } = await params;
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
 
     // Construir filtro de data
-    const where: any = { companyId: params.id };
+    const where: any = { companyId };
     if (startDate || endDate) {
       where.createdAt = {};
       if (startDate) where.createdAt.gte = new Date(startDate);

@@ -26,7 +26,7 @@ const updateSaleSchema = createSaleSchema.partial();
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ companyId: string }> }
 ) {
   const authResult = await requireAuth(request);
   if (authResult.error) {
@@ -34,6 +34,7 @@ export async function GET(
   }
 
   try {
+    const { companyId } = await params;
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "50");
@@ -45,7 +46,7 @@ export async function GET(
     const skip = (page - 1) * limit;
 
     // Construir filtro
-    const where: any = { companyId: params.id };
+    const where: any = { companyId };
     if (status) where.paymentStatus = status;
     if (source) where.source = source;
     if (startDate || endDate) {
@@ -93,7 +94,7 @@ export async function GET(
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ companyId: string }> }
 ) {
   const authResult = await requireAuth(request);
   if (authResult.error) {
@@ -101,12 +102,13 @@ export async function POST(
   }
 
   try {
+    const { companyId } = await params;
     const body = await request.json();
     const data = createSaleSchema.parse(body);
 
     // Verificar que company existe
     const company = await prisma.company.findUnique({
-      where: { id: params.id },
+      where: { id: companyId },
     });
 
     if (!company) {

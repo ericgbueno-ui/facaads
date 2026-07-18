@@ -5,7 +5,7 @@ import { requireAuth } from "@/lib/auth-middleware";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ companyId: string }> }
 ) {
   const authResult = await requireAuth(request);
   if (authResult.error) {
@@ -13,6 +13,7 @@ export async function POST(
   }
 
   try {
+    const { companyId } = await params;
     const body = await request.json();
     const { websiteUrl } = body;
 
@@ -25,7 +26,7 @@ export async function POST(
 
     // Verificar que company existe
     const company = await prisma.company.findUnique({
-      where: { id: params.id },
+      where: { id: companyId },
       include: { knowledge: true },
     });
 

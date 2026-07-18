@@ -32,7 +32,7 @@ const LeadUpdateSchema = z.object({
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { companyId: string; leadId: string } }
+  { params }: { params: Promise<{ companyId: string; leadId: string }> }
 ) {
   try {
     const session = await auth();
@@ -84,7 +84,7 @@ export async function GET(
  */
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { companyId: string; leadId: string } }
+  { params }: { params: Promise<{ companyId: string; leadId: string }> }
 ) {
   try {
     const session = await auth();
@@ -157,7 +157,7 @@ export async function PUT(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { companyId: string; leadId: string } }
+  { params }: { params: Promise<{ companyId: string; leadId: string }> }
 ) {
   try {
     const session = await auth();

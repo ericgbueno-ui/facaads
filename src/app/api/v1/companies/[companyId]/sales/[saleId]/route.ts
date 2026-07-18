@@ -23,7 +23,7 @@ const updateSaleSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string; saleId: string } }
+  { params }: { params: Promise<{ companyId: string; saleId: string }> }
 ) {
   const authResult = await requireAuth(request);
   if (authResult.error) {
@@ -31,15 +31,16 @@ export async function GET(
   }
 
   try {
+    const { companyId, saleId } = await params;
     const sale = await prisma.sale.findUnique({
-      where: { id: params.saleId },
+      where: { id: saleId },
       include: {
         company: { select: { id: true, name: true } },
         campaign: { select: { id: true, name: true } },
       },
     });
 
-    if (!sale || sale.companyId !== params.id) {
+    if (!sale || sale.companyId !== companyId) {
       return NextResponse.json(
         { error: "Sale not found" },
         { status: 404 }
@@ -65,7 +66,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; saleId: string } }
+  { params }: { params: Promise<{ companyId: string; saleId: string }> }
 ) {
   const authResult = await requireAuth(request);
   if (authResult.error) {
@@ -73,15 +74,16 @@ export async function PUT(
   }
 
   try {
+    const { companyId, saleId } = await params;
     const body = await request.json();
     const data = updateSaleSchema.parse(body);
 
     // Verificar que venda existe
     const sale = await prisma.sale.findUnique({
-      where: { id: params.saleId },
+      where: { id: saleId },
     });
 
-    if (!sale || sale.companyId !== params.id) {
+    if (!sale || sale.companyId !== companyId) {
       return NextResponse.json(
         { error: "Sale not found" },
         { status: 404 }
@@ -90,7 +92,7 @@ export async function PUT(
 
     // Atualizar venda
     const updated = await prisma.sale.update({
-      where: { id: params.saleId },
+      where: { id: saleId },
       data: {
         ...data,
         completedAt: data.completedAt ? new Date(data.completedAt) : undefined,
@@ -127,7 +129,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; saleId: string } }
+  { params }: { params: Promise<{ companyId: string; saleId: string }> }
 ) {
   const authResult = await requireAuth(request);
   if (authResult.error) {
@@ -135,12 +137,13 @@ export async function DELETE(
   }
 
   try {
+    const { companyId, saleId } = await params;
     // Verificar que venda existe
     const sale = await prisma.sale.findUnique({
-      where: { id: params.saleId },
+      where: { id: saleId },
     });
 
-    if (!sale || sale.companyId !== params.id) {
+    if (!sale || sale.companyId !== companyId) {
       return NextResponse.json(
         { error: "Sale not found" },
         { status: 404 }

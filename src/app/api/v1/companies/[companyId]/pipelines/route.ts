@@ -30,7 +30,7 @@ type StageInput = z.infer<typeof StageSchema>;
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { companyId: string } }
+  { params }: { params: Promise<{ companyId: string }> }
 ) {
   try {
     const session = await auth();
@@ -89,7 +89,7 @@ export async function GET(
  */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { companyId: string } }
+  { params }: { params: Promise<{ companyId: string }> }
 ) {
   try {
     const session = await auth();
