@@ -10,7 +10,7 @@ import {
   Settings,
   CheckCircle,
   AlertCircle,
-  Facebook,
+  Share2,
   Globe,
   Music,
   Package,
@@ -20,7 +20,7 @@ const integrationPlatforms = [
   {
     id: "meta_ads",
     name: "Meta Ads",
-    icon: <Facebook className="h-8 w-8 text-blue-500" />,
+    icon: <Share2 className="h-8 w-8 text-blue-500" />,
     description: "Facebook & Instagram Advertising",
     status: "connected",
     connectedAt: "2025-06-15",
