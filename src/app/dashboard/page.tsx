@@ -222,7 +222,7 @@ export default function DashboardPage() {
       <header className="flex items-center justify-between border-b border-slate-200/70 bg-white/70 px-8 py-4 backdrop-blur-xl">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => router.push("/projects")}
+            onClick={() => router.push(ctx ? `/projects?channel=${ctx.channel}` : "/projects")}
             className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-2 text-sm font-medium text-slate-600 ring-1 ring-slate-200 shadow-sm transition hover:ring-indigo-300 hover:text-indigo-600"
           >
             ← Voltar

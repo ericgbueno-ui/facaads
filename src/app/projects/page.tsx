@@ -52,6 +52,14 @@ export default function ProjectsPage() {
   const [loadingMeta, setLoadingMeta] = useState(false);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const channel = params.get("channel");
+    if (channel && CHANNELS.some((c) => c.id === channel)) {
+      setSelectedChannel(channel);
+    }
+  }, []);
+
+  useEffect(() => {
     if (selectedChannel === "META") {
       fetchAccounts("/api/auth/meta/accounts");
     } else if (selectedChannel === "GOOGLE") {
@@ -146,7 +154,10 @@ export default function ProjectsPage() {
           <>
             <div className="mb-6 flex gap-2">
               <button
-                onClick={() => setSelectedChannel(null)}
+                onClick={() => {
+                  window.history.replaceState(null, "", "/projects");
+                  setSelectedChannel(null);
+                }}
                 className="px-4 py-2 text-sm bg-white ring-1 ring-slate-200 hover:ring-indigo-300 rounded-xl shadow-sm transition-all text-slate-600"
               >
                 ← Voltar uma seção
@@ -155,6 +166,7 @@ export default function ProjectsPage() {
                 onClick={() => {
                   localStorage.removeItem("selectedChannel");
                   localStorage.removeItem("selectedAccount");
+                  window.history.replaceState(null, "", "/projects");
                   setSelectedChannel(null);
                 }}
                 className="px-4 py-2 text-sm bg-slate-100 hover:bg-slate-200 rounded-xl transition-all text-slate-600"
