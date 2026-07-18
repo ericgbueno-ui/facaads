@@ -127,9 +127,15 @@ export async function GET(req: Request) {
   if (!token) return NextResponse.json({ ok: false, error: "Token do Meta nao configurado (nem no banco nem no env)" }, { status: 400 });
   const { searchParams } = new URL(req.url);
   const datePreset = searchParams.get("date_preset") || "last_30d";
+  const accountId = searchParams.get("accountId");
+
+  const targets = accountId ? ACCOUNTS.filter((a) => a.id === accountId) : ACCOUNTS;
+  if (accountId && targets.length === 0) {
+    return NextResponse.json({ ok: false, error: "Conta nao encontrada" }, { status: 404 });
+  }
 
   const [accounts, sales] = await Promise.all([
-    Promise.all(ACCOUNTS.map((a) => fetchAccount(token, a, datePreset))),
+    Promise.all(targets.map((a) => fetchAccount(token, a, datePreset))),
     manualSales(),
   ]);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   CHANNELS as DEMO,
@@ -58,61 +58,6 @@ function Funnel({ msgs, leads, sales }: { msgs: number; leads: number; sales: nu
           <div className="text-sm font-bold tabular-nums">{msgs ? pct((s.value / msgs) * 100) : "0%"} ({nf.format(s.value)})</div>
         </div>
       ))}
-    </div>
-  );
-}
-
-function OverviewTable({ accounts }: { accounts: Acct[] }) {
-  const rows = accounts.map((c) => ({ c, m: metrics(c) }));
-  const tot = accounts.reduce(
-    (a, c) => ({ spend: a.spend + c.spend, impressions: a.impressions + c.impressions, reach: a.reach + c.reach, clicks: a.clicks + c.clicks, msgs: a.msgs + c.msgs, sales: a.sales + c.sales, revenue: a.revenue + c.revenue }),
-    { spend: 0, impressions: 0, reach: 0, clicks: 0, msgs: 0, sales: 0, revenue: 0 }
-  );
-  const tm = metrics(tot);
-  const th = "px-3 py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-slate-400";
-  const td = "px-3 py-3 text-right tabular-nums text-slate-700";
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[820px] text-sm">
-        <thead>
-          <tr className="border-b border-slate-100">
-            <th className="px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">Conta</th>
-            <th className={th}>Gasto</th><th className={th}>Impressoes</th><th className={th}>Alcance</th>
-            <th className={th}>CTR</th><th className={th}>CPC</th><th className={th}>CPM</th>
-            <th className={th}>Conversas WA</th><th className={th}>Vendas</th><th className={th}>CPA</th><th className={th}>ROAS</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(({ c, m }) => (
-            <tr key={c.key} className="border-b border-slate-50 hover:bg-slate-50/60">
-              <td className="px-3 py-3"><span className="inline-flex items-center gap-2 font-semibold text-slate-800"><span className="h-2.5 w-2.5 rounded-full" style={{ background: c.color }} />{c.name}</span></td>
-              <td className={td}>{brl.format(c.spend)}</td>
-              <td className={td}>{nf.format(c.impressions)}</td>
-              <td className={td}>{nf.format(c.reach)}</td>
-              <td className={td}>{pct(m.ctr)}</td>
-              <td className={td}>{c.clicks ? brl.format(m.cpc) : "—"}</td>
-              <td className={td}>{c.impressions ? brl.format(m.cpm) : "—"}</td>
-              <td className={`${td} font-semibold text-blue-700`}>{nf.format(c.msgs)}</td>
-              <td className={td}>{nf.format(c.sales)}</td>
-              <td className={td}>{c.sales ? brl.format(m.cpa) : "—"}</td>
-              <td className={`${td} font-semibold ${c.revenue ? (m.roas >= 1 ? "text-emerald-600" : "text-rose-500") : "text-slate-400"}`}>{c.revenue ? `${m.roas.toFixed(2)}x` : "—"}</td>
-            </tr>
-          ))}
-          <tr className="bg-slate-50 font-semibold">
-            <td className="px-3 py-3 text-slate-900">Total</td>
-            <td className={td}>{brl.format(tot.spend)}</td>
-            <td className={td}>{nf.format(tot.impressions)}</td>
-            <td className={td}>{nf.format(tot.reach)}</td>
-            <td className={td}>{pct(tm.ctr)}</td>
-            <td className={td}>{tot.clicks ? brl.format(tm.cpc) : "—"}</td>
-            <td className={td}>{tot.impressions ? brl.format(tm.cpm) : "—"}</td>
-            <td className={`${td} text-blue-700`}>{nf.format(tot.msgs)}</td>
-            <td className={td}>{nf.format(tot.sales)}</td>
-            <td className={td}>{tot.sales ? brl.format(tm.cpa) : "—"}</td>
-            <td className={`${td} ${tot.revenue ? (tm.roas >= 1 ? "text-emerald-600" : "text-rose-500") : "text-slate-400"}`}>{tot.revenue ? `${tm.roas.toFixed(2)}x` : "—"}</td>
-          </tr>
-        </tbody>
-      </table>
     </div>
   );
 }
@@ -189,11 +134,16 @@ function ChannelView({ c, onMarkSale }: { c: Acct; onMarkSale: () => void }) {
   );
 }
 
+function demoFor(channel: string): Acct {
+  const found = (DEMO as unknown as Acct[]).find((c) => c.key === channel);
+  return found ?? (DEMO[0] as unknown as Acct);
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
-  const [tab, setTab] = useState<string>("GERAL");
-  const [accounts, setAccounts] = useState<Acct[]>(DEMO as unknown as Acct[]);
+  const [ctx, setCtx] = useState<{ channel: string; accountId: string } | null>(null);
+  const [account, setAccount] = useState<Acct | null>(null);
   const [live, setLive] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -205,17 +155,31 @@ export default function DashboardPage() {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
-  function load() {
+  function load(channel: string, accountId: string) {
     setLoading(true);
-    fetch("/api/meta/overview")
+    if (channel !== "META") {
+      // Integracao ao vivo por conta ainda existe so para Meta Ads.
+      setAccount(demoFor(channel));
+      setLive(false);
+      setLoading(false);
+      return;
+    }
+    fetch(`/api/meta/overview?accountId=${encodeURIComponent(accountId)}`)
       .then((r) => r.json())
       .then((j) => {
-        if (j?.ok && Array.isArray(j.accounts) && j.accounts.some((a: Acct) => a.spend > 0 || a.impressions > 0 || a.sales > 0)) {
-          setAccounts(j.accounts);
+        const found = j?.ok && Array.isArray(j.accounts) ? j.accounts.find((a: Acct) => a.id === accountId) : null;
+        if (found) {
+          setAccount(found);
           setLive(true);
+        } else {
+          setAccount(demoFor(channel));
+          setLive(false);
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        setAccount(demoFor(channel));
+        setLive(false);
+      })
       .finally(() => setLoading(false));
   }
 
@@ -223,13 +187,14 @@ export default function DashboardPage() {
     const channel = typeof window !== "undefined" ? localStorage.getItem("selectedChannel") : null;
     const accountId = typeof window !== "undefined" ? localStorage.getItem("selectedAccount") : null;
     if (!channel || !accountId) { router.push("/projects"); return; }
+    setCtx({ channel, accountId });
     setReady(true);
-    load();
+    load(channel, accountId);
   }, [router]);
 
   async function submitSale(e: React.FormEvent) {
     e.preventDefault();
-    if (!saleFor) return;
+    if (!saleFor || !ctx) return;
     const value = parseFloat(amount.replace(/\./g, "").replace(",", "."));
     if (!value || value <= 0) { setErr("Informe um valor valido."); return; }
     setSaving(true); setErr("");
@@ -242,7 +207,7 @@ export default function DashboardPage() {
       const j = await r.json();
       if (!r.ok) throw new Error(j?.error || "Falha ao salvar");
       setSaleFor(null); setAmount(""); setPhone(""); setNote("");
-      load();
+      load(ctx.channel, ctx.accountId);
     } catch (e: any) {
       setErr(e?.message || "Falha ao salvar");
     } finally {
@@ -250,12 +215,7 @@ export default function DashboardPage() {
     }
   }
 
-  const globalFunnel = useMemo(() => accounts.reduce((a, c) => ({ msgs: a.msgs + c.msgs, leads: a.leads + c.leads, sales: a.sales + c.sales }), { msgs: 0, leads: 0, sales: 0 }), [accounts]);
-  const totalSpend = accounts.reduce((a, c) => a + c.spend, 0);
-  const totalRevenue = accounts.reduce((a, c) => a + c.revenue, 0);
-
-  if (!ready) return <div className="flex min-h-[60vh] items-center justify-center text-slate-400">Carregando...</div>;
-  const channel = accounts.find((c) => c.key === tab);
+  if (!ready || !account) return <div className="flex min-h-[60vh] items-center justify-center text-slate-400">Carregando...</div>;
 
   return (
     <div className="min-h-screen">
@@ -269,7 +229,7 @@ export default function DashboardPage() {
           </button>
           <div>
             <h1 className="bg-gradient-to-r from-indigo-600 via-blue-500 to-cyan-500 bg-clip-text text-lg font-extrabold text-transparent">Painel de Controle</h1>
-            <p className="text-xs text-slate-400">Inicio / {tab === "GERAL" ? "Visao Geral" : channel?.name}</p>
+            <p className="text-xs text-slate-400">Inicio / {account.name}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -283,20 +243,6 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <div className="border-b border-slate-200/70 bg-white/60 px-8 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-[1400px] gap-1 overflow-x-auto">
-          {[{ key: "GERAL", name: "Visao Geral", color: "#4f46e5" } as any, ...accounts].map((t) => {
-            const on = t.key === tab;
-            return (
-              <button key={t.key} onClick={() => setTab(t.key)} className={`relative whitespace-nowrap px-4 py-3 text-sm font-semibold transition ${on ? "text-slate-900" : "text-slate-400 hover:text-slate-600"}`}>
-                <span className="inline-flex items-center gap-2">{t.key !== "GERAL" && <span className="h-2 w-2 rounded-full" style={{ background: t.color }} />}{t.name}</span>
-                {on && <span className="absolute inset-x-3 -bottom-px h-0.5 rounded-full" style={{ background: t.color }} />}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       <main className="mx-auto max-w-[1400px] p-6 lg:p-8">
         <div className="mb-6 flex flex-wrap items-center gap-3">
           <span className="inline-flex items-center gap-2 rounded-xl bg-white/80 backdrop-blur-sm px-4 py-2.5 text-sm font-medium text-slate-700 ring-1 ring-slate-200 shadow-sm">Ultimos 30 dias</span>
@@ -305,24 +251,9 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {tab === "GERAL" ? (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              <Kpi label="Gasto total" value={brl.format(totalSpend)} />
-              <Kpi label="Faturamento total" value={totalRevenue ? brl.format(totalRevenue) : "—"} accent="text-emerald-600" hint={totalRevenue ? "" : "marque as vendas"} />
-              <Kpi label="ROAS geral" value={totalRevenue ? `${(totalRevenue / totalSpend).toFixed(2)}x` : "—"} accent={totalRevenue >= totalSpend ? "text-emerald-600" : "text-rose-500"} />
-              <Kpi label="Conversas no WhatsApp" value={nf.format(globalFunnel.msgs)} accent="text-blue-700" />
-            </div>
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)]">
-              <Card title="Todas as contas"><OverviewTable accounts={accounts} /></Card>
-              <Card title="Funil global (WhatsApp)"><Funnel msgs={globalFunnel.msgs} leads={globalFunnel.leads} sales={globalFunnel.sales} /></Card>
-            </div>
-          </div>
-        ) : (
-          channel && <ChannelView c={channel} onMarkSale={() => { setErr(""); setSaleFor(channel); }} />
-        )}
+        <ChannelView c={account} onMarkSale={() => { setErr(""); setSaleFor(account); }} />
 
-        <p className="mt-6 text-center text-[11px] text-slate-300">{live ? "Dados reais do Meta Ads (ultimos 30 dias) + vendas marcadas manualmente." : "Dados de demonstracao - conecte as contas para exibir numeros reais."}</p>
+        <p className="mt-6 text-center text-[11px] text-slate-300">{live ? "Dados reais do Meta Ads (ultimos 30 dias) + vendas marcadas manualmente." : "Dados de demonstracao - conecte a conta para exibir numeros reais."}</p>
       </main>
 
       {saleFor && (
