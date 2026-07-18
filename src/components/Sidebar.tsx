@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -11,27 +12,26 @@ import {
   Brain,
   Bell,
   MessageCircle,
-  Zap,
   Megaphone,
+  Zap,
+  Plug,
   Package,
   BarChart3,
+  FileBarChart,
+  Download,
   Settings,
-  LogOut,
+  ShieldCheck,
+  ScrollText,
+  ChevronDown,
+  Handshake,
 } from "lucide-react";
 
-const mainItems = [
+const agencyItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Empresas", href: "/companies", icon: Building2 },
   { label: "Usuários", href: "/users", icon: Users },
-  { label: "Relatórios", href: "/reports", icon: FileText },
-];
-
-const gestaoItems = [
-  { label: "Leads", href: "/leads", icon: Users },
-  { label: "CRM", href: "/crm", icon: MessageCircle },
-  { label: "Conversas", href: "/conversations", icon: MessageCircle, badge: 23 },
-  { label: "Campanhas", href: "/campaigns", icon: Megaphone },
-  { label: "Anúncios", href: "/ads", icon: Zap },
+  { label: "Relatórios Consolidados", href: "/reports", icon: FileText },
+  { label: "Financeiro", href: "/financeiro", icon: DollarSign },
 ];
 
 const inteligenciaItems = [
@@ -39,10 +39,26 @@ const inteligenciaItems = [
   { label: "Alertas", href: "/alerts", icon: Bell },
 ];
 
+const gestaoItems = [
+  { label: "Leads", href: "/leads", icon: Users },
+  { label: "CRM", href: "/crm", icon: Handshake },
+  { label: "Conversas", href: "/conversations", icon: MessageCircle, badge: 23 },
+  { label: "Campanhas", href: "/campaigns", icon: Megaphone },
+  { label: "Anúncios", href: "/ads", icon: Zap },
+  { label: "Integrações", href: "/integracoes", icon: Plug },
+  { label: "Produtos / Serviços", href: "/products", icon: Package },
+];
+
 const relatoriosItems = [
-  { label: "Financeiro", href: "/financeiro", icon: DollarSign },
+  { label: "Relatórios", href: "/relatorios", icon: FileBarChart },
   { label: "Dashboards", href: "/dashboards", icon: BarChart3 },
-  { label: "Exportações", href: "/exports", icon: FileText },
+  { label: "Exportações", href: "/exports", icon: Download },
+];
+
+const configItems = [
+  { label: "Configurações", href: "/settings", icon: Settings },
+  { label: "Permissões", href: "/permissions", icon: ShieldCheck },
+  { label: "Logs do Sistema", href: "/logs", icon: ScrollText },
 ];
 
 interface SidebarItemProps {
@@ -57,20 +73,49 @@ function SidebarItem({ label, href, icon: Icon, badge, isActive }: SidebarItemPr
   return (
     <Link
       href={href}
-      className={`group relative flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+      className={`group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
         isActive
-          ? "bg-orange-500/10 text-orange-400"
-          : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+          ? "border border-amber-500/40 bg-amber-500/10 text-amber-400"
+          : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
       }`}
     >
       <Icon className="h-4 w-4 flex-shrink-0" />
-      <span className="flex-1">{label}</span>
-      {badge && (
-        <span className="flex items-center justify-center rounded-full bg-orange-500 px-1.5 py-0.5 text-xs font-bold text-white">
+      <span className="flex-1 truncate">{label}</span>
+      {badge !== undefined && (
+        <span
+          className={`flex items-center justify-center rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
+            typeof badge === "number"
+              ? "bg-amber-500 text-slate-950"
+              : "bg-amber-500/20 text-amber-400"
+          }`}
+        >
           {badge}
         </span>
       )}
     </Link>
+  );
+}
+
+function SidebarSection({
+  title,
+  items,
+  pathname,
+}: {
+  title: string;
+  items: Array<Omit<SidebarItemProps, "isActive">>;
+  pathname: string;
+}) {
+  return (
+    <div>
+      <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">
+        {title}
+      </p>
+      <div className="space-y-0.5">
+        {items.map((item) => (
+          <SidebarItem key={item.href} {...item} isActive={pathname === item.href} />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -82,78 +127,42 @@ export function Sidebar({ companyId }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 overflow-y-auto border-r border-slate-700/50 bg-slate-950 pt-20 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
-      <div className="space-y-8 px-4 py-6">
-        {/* GESTÃO */}
-        <div>
-          <p className="mb-3 px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Gestão
-          </p>
-          <div className="space-y-1">
-            {gestaoItems.map((item) => (
-              <SidebarItem
-                key={item.href}
-                {...item}
-                isActive={pathname === item.href}
-              />
-            ))}
-          </div>
-        </div>
+    <aside className="fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-white/5 bg-[#070b14]">
+      {/* Logo */}
+      <Link href="/dashboard" className="flex items-center justify-center border-b border-white/5 px-4 py-4">
+        <Image
+          src="/logo_herge.webp"
+          alt="Hergé — Inteligência que conecta resultados"
+          width={200}
+          height={96}
+          priority
+          className="h-auto w-full max-w-[190px] object-contain"
+        />
+      </Link>
 
-        {/* INTELIGÊNCIA */}
-        <div>
-          <p className="mb-3 px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Inteligência
-          </p>
-          <div className="space-y-1">
-            {inteligenciaItems.map((item) => (
-              <SidebarItem
-                key={item.href}
-                {...item}
-                isActive={pathname === item.href}
-              />
-            ))}
-          </div>
-        </div>
+      {/* Navigation */}
+      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5 [scrollbar-width:thin]">
+        <SidebarSection title="Agency" items={agencyItems} pathname={pathname} />
+        <SidebarSection title="Inteligência" items={inteligenciaItems} pathname={pathname} />
+        <SidebarSection title="Gestão" items={gestaoItems} pathname={pathname} />
+        <SidebarSection title="Relatórios" items={relatoriosItems} pathname={pathname} />
+        <SidebarSection title="Configurações" items={configItems} pathname={pathname} />
+      </nav>
 
-        {/* RELATÓRIOS */}
-        <div>
-          <p className="mb-3 px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Relatórios
+      {/* Mode switcher */}
+      <div className="border-t border-white/5 p-3">
+        <button className="w-full rounded-xl border border-white/10 bg-white/[0.03] p-3 text-left transition-colors hover:bg-white/[0.06]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">
+            Modo
           </p>
-          <div className="space-y-1">
-            {relatoriosItems.map((item) => (
-              <SidebarItem
-                key={item.href}
-                {...item}
-                isActive={pathname === item.href}
-              />
-            ))}
+          <div className="mt-1 flex items-center justify-between">
+            <span className="text-sm font-semibold text-slate-100">Hergé Agency</span>
+            <ChevronDown className="h-4 w-4 text-slate-500" />
           </div>
-        </div>
-
-        {/* CONFIGURAÇÕES */}
-        <div>
-          <p className="mb-3 px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-            Configurações
+          <p className="mt-1 text-[11px] leading-snug text-slate-500">
+            Gerencie todas as empresas em um só lugar.
           </p>
-          <div className="space-y-1">
-            <SidebarItem
-              label="Configurações"
-              href="/settings"
-              icon={Settings}
-              isActive={pathname === "/settings"}
-            />
-          </div>
-        </div>
-
-        {/* Logout */}
-        <div className="border-t border-slate-700/50 pt-4">
-          <button className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-red-400">
-            <LogOut className="h-4 w-4" />
-            <span>Sair</span>
-          </button>
-        </div>
+        </button>
       </div>
     </aside>
   );
