@@ -300,32 +300,36 @@ export function DashboardOverview() {
   }, []);
 
   const live = data !== null;
-  const kpiValues = live ? data.kpis : demoKpis;
-  const metricValues = live ? data.metrics : demoMetrics;
-  const series = live && data.series.length > 1 ? data.series : demoSeries;
+  const safeData = data ?? null;
+  const kpiValues = safeData?.kpis ?? demoKpis;
+  const metricValues = safeData?.metrics ?? demoMetrics;
+  const series = (safeData?.series?.length ?? 0) > 1 && safeData?.series ? safeData.series : demoSeries;
 
   const channels = useMemo(() => {
-    if (!live || data.channels.length === 0) return demoChannels;
-    return data.channels.map((c) => ({
+    const source = safeData?.channels ?? [];
+    if (!live || source.length === 0) return demoChannels;
+    return source.map((c) => ({
       name: c.name,
       value: c.value,
       color: CHANNEL_COLORS[c.channel] || "#64748B",
     }));
-  }, [live, data]);
+  }, [live, safeData]);
 
   const companies = useMemo(() => {
-    if (!live || data.companies.length === 0) return demoCompanies;
-    return data.companies.map((c) => ({
+    const source = safeData?.companies ?? [];
+    if (!live || source.length === 0) return demoCompanies;
+    return source.map((c) => ({
       name: c.name,
       segment: c.segment,
       revenue: brl(c.revenue),
       delta: c.delta,
     }));
-  }, [live, data]);
+  }, [live, safeData]);
 
   const campaigns = useMemo(() => {
-    if (!live || data.campaigns.length === 0) return demoCampaigns;
-    return data.campaigns.map((c) => ({
+    const source = safeData?.campaigns ?? [];
+    if (!live || source.length === 0) return demoCampaigns;
+    return source.map((c) => ({
       name: c.name,
       channel: c.channel.charAt(0) + c.channel.slice(1).toLowerCase(),
       channelColor: CHANNEL_COLORS[c.channel] || "#64748B",
@@ -336,21 +340,23 @@ export function DashboardOverview() {
       roas: num(c.roas, 2),
       cpa: brl(c.cpa),
     }));
-  }, [live, data]);
+  }, [live, safeData]);
 
-  const funnel = live && data.funnel.some((f) => f.value > 0) ? data.funnel : demoFunnel;
+  const funnelSource = safeData?.funnel ?? [];
+  const funnel = live && funnelSource.some((f) => f.value > 0) ? funnelSource : demoFunnel;
   const funnelMax = Math.max(...funnel.map((f) => f.value), 1);
   const funnelColors = ["#2563eb", "#22c55e", "#eab308", "#f97316", "#ef4444"];
 
   const activities = useMemo(() => {
-    if (!live || data.activities.length === 0) return demoActivities;
-    return data.activities.map((a) => ({
+    const source = safeData?.activities ?? [];
+    if (!live || source.length === 0) return demoActivities;
+    return source.map((a) => ({
       type: a.type,
       title: a.title,
       detail: a.detail,
       time: relativeTime(a.at),
     }));
-  }, [live, data]);
+  }, [live, safeData]);
 
   const receitaSpark = series.map((s) => s.receita);
   const investSpark = series.map((s) => s.investimento);
