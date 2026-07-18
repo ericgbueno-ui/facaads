@@ -4,26 +4,24 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  Building2,
-  Users,
-  FileText,
-  DollarSign,
-  Brain,
+  BarChart3,
   Bell,
+  Building2,
+  ChevronDown,
+  DollarSign,
+  FileBarChart,
+  FileText,
+  Handshake,
+  LayoutDashboard,
   MessageCircle,
   Megaphone,
-  Zap,
-  Plug,
   Package,
-  BarChart3,
-  FileBarChart,
-  Download,
+  Plug,
+  ScrollText,
   Settings,
   ShieldCheck,
-  ScrollText,
-  ChevronDown,
-  Handshake,
+  Users,
+  Zap,
 } from "lucide-react";
 
 const agencyItems = [
@@ -35,7 +33,7 @@ const agencyItems = [
 ];
 
 const inteligenciaItems = [
-  { label: "IA Insights", href: "/ai-insights", icon: Brain, badge: "Novo" },
+  { label: "IA Insights", href: "/ai-insights", icon: Bell, badge: "Novo" },
   { label: "Alertas", href: "/alerts", icon: Bell },
 ];
 
@@ -52,7 +50,7 @@ const gestaoItems = [
 const relatoriosItems = [
   { label: "Relatórios", href: "/relatorios", icon: FileBarChart },
   { label: "Dashboards", href: "/dashboards", icon: BarChart3 },
-  { label: "Exportações", href: "/exports", icon: Download },
+  { label: "Exportações", href: "/exports", icon: FileText },
 ];
 
 const configItems = [
@@ -73,10 +71,10 @@ function SidebarItem({ label, href, icon: Icon, badge, isActive }: SidebarItemPr
   return (
     <Link
       href={href}
-      className={`group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+      className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
         isActive
-          ? "border border-amber-500/40 bg-amber-500/10 text-amber-400"
-          : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+          ? "border border-amber-500/30 bg-[linear-gradient(90deg,rgba(245,158,11,0.14),rgba(245,158,11,0.04))] text-amber-300 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)]"
+          : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-100"
       }`}
     >
       <Icon className="h-4 w-4 flex-shrink-0" />
@@ -86,7 +84,7 @@ function SidebarItem({ label, href, icon: Icon, badge, isActive }: SidebarItemPr
           className={`flex items-center justify-center rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
             typeof badge === "number"
               ? "bg-amber-500 text-slate-950"
-              : "bg-amber-500/20 text-amber-400"
+              : "bg-violet-500/20 text-violet-300"
           }`}
         >
           {badge}
@@ -107,7 +105,7 @@ function SidebarSection({
 }) {
   return (
     <div>
-      <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">
+      <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
         {title}
       </p>
       <div className="space-y-0.5">
@@ -119,16 +117,11 @@ function SidebarSection({
   );
 }
 
-interface SidebarProps {
-  companyId?: string;
-}
-
-export function Sidebar({ companyId }: SidebarProps) {
+export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-white/5 bg-[#070b14]">
-      {/* Logo */}
+    <aside className="fixed left-0 top-0 z-50 flex h-screen w-64 flex-col border-r border-white/5 bg-[#050816]">
       <Link href="/dashboard" className="flex items-center justify-center border-b border-white/5 px-4 py-4">
         <Image
           src="/logo_herge.webp"
@@ -140,7 +133,6 @@ export function Sidebar({ companyId }: SidebarProps) {
         />
       </Link>
 
-      {/* Navigation */}
       <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5 [scrollbar-width:thin]">
         <SidebarSection title="Agency" items={agencyItems} pathname={pathname} />
         <SidebarSection title="Inteligência" items={inteligenciaItems} pathname={pathname} />
@@ -149,10 +141,9 @@ export function Sidebar({ companyId }: SidebarProps) {
         <SidebarSection title="Configurações" items={configItems} pathname={pathname} />
       </nav>
 
-      {/* Mode switcher */}
       <div className="border-t border-white/5 p-3">
-        <button className="w-full rounded-xl border border-white/10 bg-white/[0.03] p-3 text-left transition-colors hover:bg-white/[0.06]">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-500">
+        <button className="w-full rounded-2xl border border-white/10 bg-white/[0.03] p-3 text-left transition-colors hover:bg-white/[0.06]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
             Modo
           </p>
           <div className="mt-1 flex items-center justify-between">

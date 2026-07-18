@@ -1,37 +1,38 @@
 "use client";
 
+import type { ComponentType, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
+  CartesianGrid,
   Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
 } from "recharts";
 import {
-  DollarSign,
-  Wallet,
-  Share2,
-  Users,
-  ShoppingCart,
-  Target,
-  ChevronDown,
-  MessageCircle,
   BadgeCheck,
-  Package,
-  FileBarChart,
-  Sparkles,
-  MousePointerClick,
-  Percent,
-  MonitorPlay,
+  ChevronDown,
   Clock3,
-  Receipt,
+  DollarSign,
+  FileBarChart,
   Gem,
+  MessageCircle,
+  MonitorPlay,
+  MousePointerClick,
+  Package,
+  Percent,
+  Receipt,
+  Share2,
+  ShoppingCart,
+  Sparkles,
+  Target,
+  Users,
+  Wallet,
 } from "lucide-react";
 
 /* ------------------------------- formatters ------------------------------- */
@@ -39,13 +40,16 @@ import {
 const brl = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const num = (v: number, d = 1) =>
-  v.toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
+  v.toLocaleString("pt-BR", {
+    minimumFractionDigits: d,
+    maximumFractionDigits: d,
+  });
 
 const CHANNEL_COLORS: Record<string, string> = {
-  META: "#3B82F6",
-  GOOGLE: "#22C55E",
-  TIKTOK: "#EC4899",
-  SHOPEE: "#F97316",
+  META: "#2563eb",
+  GOOGLE: "#22c55e",
+  TIKTOK: "#ec4899",
+  SHOPEE: "#f97316",
 };
 
 function relativeTime(iso: string): string {
@@ -146,6 +150,7 @@ function Sparkline({ data, color }: { data: number[]; color: string }) {
   const points = data
     .map((v, i) => `${(i / (data.length - 1)) * 100},${28 - ((v - min) / range) * 24}`)
     .join(" ");
+
   return (
     <svg viewBox="0 0 100 32" className="h-8 w-full" preserveAspectRatio="none">
       <polyline
@@ -171,17 +176,31 @@ function Delta({ value }: { value: number }) {
   );
 }
 
-function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+function Card({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <div className={`rounded-2xl border border-white/[0.06] bg-[#0c1120] p-5 ${className}`}>
+    <div
+      className={`rounded-2xl border border-white/[0.06] bg-[linear-gradient(180deg,rgba(12,17,32,0.96),rgba(9,14,27,0.96))] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.25)] ${className}`}
+    >
       {children}
     </div>
   );
 }
 
-function CardTitle({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
+function CardTitle({
+  children,
+  action,
+}: {
+  children: ReactNode;
+  action?: ReactNode;
+}) {
   return (
-    <div className="mb-4 flex items-center justify-between">
+    <div className="mb-4 flex items-center justify-between gap-3">
       <h3 className="text-sm font-semibold text-slate-100">{children}</h3>
       {action}
     </div>
@@ -219,12 +238,52 @@ interface OverviewData {
   activities: Array<{ type: string; title: string; detail: string; at: string }>;
 }
 
+function StatCard({
+  label,
+  value,
+  delta,
+  icon: Icon,
+  color,
+  spark,
+}: {
+  label: string;
+  value: string;
+  delta: number;
+  icon: ComponentType<{ className?: string }>;
+  color: string;
+  spark: number[];
+}) {
+  return (
+    <Card className="!p-4">
+      <div className="flex items-center gap-2">
+        <span
+          className="flex h-9 w-9 items-center justify-center rounded-xl"
+          style={{ backgroundColor: `${color}1a` }}
+        >
+          <Icon className="h-4 w-4" style={{ color }} />
+        </span>
+        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+          {label}
+        </span>
+      </div>
+      <p className="mt-3 text-2xl font-bold tracking-tight text-white">{value}</p>
+      <div className="mt-1">
+        <Delta value={delta} />
+      </div>
+      <div className="mt-3">
+        <Sparkline data={spark} color={color} />
+      </div>
+    </Card>
+  );
+}
+
 export function DashboardOverview() {
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
+
     fetch("/api/dashboard/overview?days=30")
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
@@ -234,6 +293,7 @@ export function DashboardOverview() {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
     return () => {
       cancelled = true;
     };
@@ -280,7 +340,7 @@ export function DashboardOverview() {
 
   const funnel = live && data.funnel.some((f) => f.value > 0) ? data.funnel : demoFunnel;
   const funnelMax = Math.max(...funnel.map((f) => f.value), 1);
-  const funnelColors = ["#3B82F6", "#22C55E", "#EAB308", "#F97316", "#EF4444"];
+  const funnelColors = ["#2563eb", "#22c55e", "#eab308", "#f97316", "#ef4444"];
 
   const activities = useMemo(() => {
     if (!live || data.activities.length === 0) return demoActivities;
@@ -297,63 +357,40 @@ export function DashboardOverview() {
   const roasSpark = series.map((s) => (s.investimento > 0 ? s.receita / s.investimento : 0));
 
   const kpis = [
-    { label: "Investimento", value: brl(kpiValues.investment.value), delta: kpiValues.investment.delta, icon: DollarSign, color: "#EAB308", spark: investSpark },
-    { label: "Receita", value: brl(kpiValues.revenue.value), delta: kpiValues.revenue.delta, icon: Wallet, color: "#22C55E", spark: receitaSpark },
-    { label: "ROAS", value: num(kpiValues.roas.value, 2), delta: kpiValues.roas.delta, icon: Share2, color: "#A855F7", spark: roasSpark },
-    { label: "Leads", value: String(kpiValues.leads.value), delta: kpiValues.leads.delta, icon: Users, color: "#3B82F6", spark: receitaSpark },
-    { label: "Vendas", value: String(kpiValues.sales.value), delta: kpiValues.sales.delta, icon: ShoppingCart, color: "#22C55E", spark: receitaSpark },
-    { label: "Taxa de Conversão", value: `${num(kpiValues.conversionRate.value)}%`, delta: kpiValues.conversionRate.delta, icon: Target, color: "#A855F7", spark: roasSpark },
+    { label: "Investimento", value: brl(kpiValues.investment.value), delta: kpiValues.investment.delta, icon: DollarSign, color: "#eab308", spark: investSpark },
+    { label: "Receita", value: brl(kpiValues.revenue.value), delta: kpiValues.revenue.delta, icon: Wallet, color: "#22c55e", spark: receitaSpark },
+    { label: "ROAS", value: num(kpiValues.roas.value, 2), delta: kpiValues.roas.delta, icon: Share2, color: "#a855f7", spark: roasSpark },
+    { label: "Leads", value: String(kpiValues.leads.value), delta: kpiValues.leads.delta, icon: Users, color: "#3b82f6", spark: receitaSpark },
+    { label: "Vendas", value: String(kpiValues.sales.value), delta: kpiValues.sales.delta, icon: ShoppingCart, color: "#22c55e", spark: receitaSpark },
+    { label: "Taxa de Conversão", value: `${num(kpiValues.conversionRate.value)}%`, delta: kpiValues.conversionRate.delta, icon: Target, color: "#a855f7", spark: roasSpark },
   ];
 
   const bottomMetrics = [
-    { label: "CPC Médio", value: brl(metricValues.cpc.value), delta: metricValues.cpc.delta, icon: MousePointerClick, color: "#3B82F6", spark: investSpark },
-    { label: "CTR Médio", value: `${num(metricValues.ctr.value, 2)}%`, delta: metricValues.ctr.delta, icon: Percent, color: "#22C55E", spark: receitaSpark },
-    { label: "CPM Médio", value: brl(metricValues.cpm.value), delta: metricValues.cpm.delta, icon: MonitorPlay, color: "#EAB308", spark: investSpark },
-    { label: "Tempo Médio de Resposta", value: live ? "—" : "2m 18s", delta: live ? 0 : -12.6, icon: Clock3, color: "#EC4899", spark: roasSpark },
-    { label: "Ticket Médio", value: brl(metricValues.ticket.value), delta: metricValues.ticket.delta, icon: Receipt, color: "#F97316", spark: receitaSpark },
-    { label: "LTV Médio", value: live ? "—" : "R$ 2.134,50", delta: live ? 0 : 17.8, icon: Gem, color: "#A855F7", spark: receitaSpark },
+    { label: "CPC Médio", value: brl(metricValues.cpc.value), delta: metricValues.cpc.delta, icon: MousePointerClick, color: "#3b82f6", spark: investSpark },
+    { label: "CTR Médio", value: `${num(metricValues.ctr.value, 2)}%`, delta: metricValues.ctr.delta, icon: Percent, color: "#22c55e", spark: receitaSpark },
+    { label: "CPM Médio", value: brl(metricValues.cpm.value), delta: metricValues.cpm.delta, icon: MonitorPlay, color: "#eab308", spark: investSpark },
+    { label: "Tempo Médio de Resposta", value: live ? "—" : "2m 18s", delta: live ? 0 : -12.6, icon: Clock3, color: "#ec4899", spark: roasSpark },
+    { label: "Ticket Médio", value: brl(metricValues.ticket.value), delta: metricValues.ticket.delta, icon: Receipt, color: "#f97316", spark: receitaSpark },
+    { label: "LTV Médio", value: live ? "—" : "R$ 2.134,50", delta: live ? 0 : 17.8, icon: Gem, color: "#a855f7", spark: receitaSpark },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Data source badge */}
       {!loading && !live && (
-        <div className="flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-4 py-2 text-xs text-amber-300">
+        <div className="flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3 text-xs text-amber-300">
           <Sparkles className="h-3.5 w-3.5" />
-          Exibindo dados de demonstração — conecte suas contas de anúncios e registre vendas para ver dados reais.
+          Exibindo dados de demonstração. Conecte suas contas e registre vendas para liberar métricas reais.
         </div>
       )}
 
-      {/* KPI row */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 2xl:grid-cols-6">
         {kpis.map((kpi) => (
-          <Card key={kpi.label} className="!p-4">
-            <div className="flex items-center gap-2">
-              <span
-                className="flex h-8 w-8 items-center justify-center rounded-lg"
-                style={{ backgroundColor: `${kpi.color}1a` }}
-              >
-                <kpi.icon className="h-4 w-4" style={{ color: kpi.color }} />
-              </span>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                {kpi.label}
-              </span>
-            </div>
-            <p className="mt-3 text-2xl font-bold text-white">{kpi.value}</p>
-            <div className="mt-1">
-              <Delta value={kpi.delta} />
-            </div>
-            <div className="mt-3">
-              <Sparkline data={kpi.spark} color={kpi.color} />
-            </div>
-          </Card>
+          <StatCard key={kpi.label} {...kpi} />
         ))}
       </div>
 
-      {/* Charts row */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr_1fr_1fr]">
-        {/* Receita vs Investimento */}
-        <Card>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.45fr_1fr_1fr]">
+        <Card className="min-h-[360px]">
           <CardTitle
             action={
               <button className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-300 hover:bg-white/[0.08]">
@@ -372,7 +409,7 @@ export function DashboardOverview() {
               <span className="h-2 w-2 rounded-full bg-amber-500" /> Investimento
             </span>
           </div>
-          <ResponsiveContainer width="100%" height={240}>
+          <ResponsiveContainer width="100%" height={250}>
             <LineChart data={series}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
               <XAxis dataKey="date" stroke="#64748B" fontSize={11} tickLine={false} axisLine={false} />
@@ -390,14 +427,13 @@ export function DashboardOverview() {
                   name === "receita" ? "Receita" : "Investimento",
                 ]}
               />
-              <Line type="monotone" dataKey="receita" stroke="#22C55E" strokeWidth={2} dot={{ fill: "#22C55E", r: 3 }} />
-              <Line type="monotone" dataKey="investimento" stroke="#EAB308" strokeWidth={2} dot={{ fill: "#EAB308", r: 3 }} />
+              <Line type="monotone" dataKey="receita" stroke="#22c55e" strokeWidth={2.2} dot={{ fill: "#22c55e", r: 3 }} />
+              <Line type="monotone" dataKey="investimento" stroke="#eab308" strokeWidth={2.2} dot={{ fill: "#eab308", r: 3 }} />
             </LineChart>
           </ResponsiveContainer>
         </Card>
 
-        {/* Performance por Canal */}
-        <Card>
+        <Card className="min-h-[360px]">
           <CardTitle
             action={
               <button className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-300 hover:bg-white/[0.08]">
@@ -408,15 +444,15 @@ export function DashboardOverview() {
             Performance por Canal
           </CardTitle>
           <div className="flex items-center gap-4">
-            <div className="h-[190px] w-1/2 min-w-[140px]">
+            <div className="h-[210px] w-1/2 min-w-[150px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={channels}
                     cx="50%"
                     cy="50%"
-                    innerRadius={48}
-                    outerRadius={80}
+                    innerRadius={54}
+                    outerRadius={82}
                     paddingAngle={2}
                     dataKey="value"
                     stroke="none"
@@ -433,7 +469,7 @@ export function DashboardOverview() {
               {channels.map((c) => (
                 <li key={c.name} className="flex items-center justify-between text-xs">
                   <span className="flex items-center gap-2 text-slate-300">
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: c.color }} />
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.color }} />
                     {c.name}
                   </span>
                   <span className="font-semibold text-slate-100">{c.value}%</span>
@@ -443,8 +479,7 @@ export function DashboardOverview() {
           </div>
         </Card>
 
-        {/* Empresas em Destaque */}
-        <Card>
+        <Card className="min-h-[360px]">
           <CardTitle
             action={
               <button className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-300 hover:bg-white/[0.08]">
@@ -457,9 +492,13 @@ export function DashboardOverview() {
           </CardTitle>
           <ul className="space-y-3">
             {companies.map((c) => (
-              <li key={c.name} className="flex items-center gap-3">
-                <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-[11px] font-bold text-slate-200">
-                  {c.name.split(" ").map((w) => w[0]).slice(0, 2).join("")}
+              <li key={c.name} className="flex items-center gap-3 rounded-xl px-1 py-1.5 hover:bg-white/[0.03]">
+                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-[11px] font-bold text-slate-200">
+                  {c.name
+                    .split(" ")
+                    .map((w) => w[0])
+                    .slice(0, 2)
+                    .join("")}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium text-slate-100">{c.name}</span>
@@ -475,16 +514,14 @@ export function DashboardOverview() {
               </li>
             ))}
           </ul>
-          <button className="mt-4 w-full rounded-lg border border-white/10 bg-white/[0.03] py-2 text-xs font-medium text-slate-300 hover:bg-white/[0.07]">
+          <button className="mt-4 w-full rounded-xl border border-white/10 bg-white/[0.03] py-2.5 text-xs font-medium text-slate-300 hover:bg-white/[0.07]">
             Ver todas as empresas
           </button>
         </Card>
       </div>
 
-      {/* Campaigns / Funnel / Activities */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr_1fr_1fr]">
-        {/* Desempenho das Campanhas */}
-        <Card>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.45fr_1fr_1fr]">
+        <Card className="min-h-[340px]">
           <CardTitle>Desempenho das Campanhas</CardTitle>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
@@ -523,13 +560,12 @@ export function DashboardOverview() {
               </tbody>
             </table>
           </div>
-          <button className="mt-4 w-full rounded-lg border border-white/10 bg-white/[0.03] py-2 text-xs font-medium text-slate-300 hover:bg-white/[0.07]">
+          <button className="mt-4 w-full rounded-xl border border-white/10 bg-white/[0.03] py-2.5 text-xs font-medium text-slate-300 hover:bg-white/[0.07]">
             Ver todas as campanhas
           </button>
         </Card>
 
-        {/* Funil de Vendas */}
-        <Card>
+        <Card className="min-h-[340px]">
           <CardTitle>Funil de Vendas (Geral)</CardTitle>
           <div className="space-y-2.5 pt-2">
             {funnel.map((step, i) => (
@@ -551,14 +587,13 @@ export function DashboardOverview() {
           </div>
         </Card>
 
-        {/* Atividades Recentes */}
-        <Card>
+        <Card className="min-h-[340px]">
           <CardTitle>Atividades Recentes</CardTitle>
           <ul className="space-y-3">
             {activities.map((a, i) => {
               const ic = ACTIVITY_ICONS[a.type] || ACTIVITY_ICONS.report;
               return (
-                <li key={`${a.title}-${i}`} className="flex items-center gap-3">
+                <li key={`${a.title}-${i}`} className="flex items-center gap-3 rounded-xl px-1 py-1.5 hover:bg-white/[0.03]">
                   <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${ic.bg}`}>
                     <ic.icon className={`h-4 w-4 ${ic.color}`} />
                   </span>
@@ -571,36 +606,15 @@ export function DashboardOverview() {
               );
             })}
           </ul>
-          <button className="mt-4 w-full rounded-lg border border-white/10 bg-white/[0.03] py-2 text-xs font-medium text-slate-300 hover:bg-white/[0.07]">
+          <button className="mt-4 w-full rounded-xl border border-white/10 bg-white/[0.03] py-2.5 text-xs font-medium text-slate-300 hover:bg-white/[0.07]">
             Ver todas
           </button>
         </Card>
       </div>
 
-      {/* Bottom metrics */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3 2xl:grid-cols-6">
         {bottomMetrics.map((m) => (
-          <Card key={m.label} className="!p-4">
-            <div className="flex items-center gap-2">
-              <span
-                className="flex h-8 w-8 items-center justify-center rounded-lg"
-                style={{ backgroundColor: `${m.color}1a` }}
-              >
-                <m.icon className="h-4 w-4" style={{ color: m.color }} />
-              </span>
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                {m.label}
-              </span>
-            </div>
-            <p className="mt-2 text-xl font-bold text-white">{m.value}</p>
-            <span className={`text-xs font-semibold ${m.delta >= 0 ? "text-green-400" : "text-red-400"}`}>
-              {m.delta >= 0 ? "▲" : "▼"} {m.delta >= 0 ? "+" : ""}
-              {num(m.delta)}%
-            </span>
-            <div className="mt-2">
-              <Sparkline data={m.spark} color={m.color} />
-            </div>
-          </Card>
+          <StatCard key={m.label} {...m} />
         ))}
       </div>
     </div>
