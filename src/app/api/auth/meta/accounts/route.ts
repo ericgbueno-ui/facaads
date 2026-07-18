@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
     }
 
     const accounts = await getUserMetaAccounts();
+    console.log(`[meta/accounts] found ${accounts.length} account(s)`);
 
     return NextResponse.json({
       ok: true,
