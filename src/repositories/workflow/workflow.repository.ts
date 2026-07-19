@@ -100,7 +100,7 @@ export class WorkflowRepository {
     });
   }
 
-  async updateAction(actionId: string, workflowId: string, companyId: string, updates: Partial<{ config: Prisma.JsonValue; order: number; isActive: boolean }>): Promise<WorkflowAction | null> {
+  async updateAction(actionId: string, workflowId: string, companyId: string, updates: Partial<{ config: Prisma.JsonValue; actionOrder: number; isActive: boolean }>): Promise<WorkflowAction | null> {
     const action = await this.findActionById(actionId, workflowId, companyId);
     if (!action) return null;
 
@@ -119,7 +119,7 @@ export class WorkflowRepository {
   async listActions(workflowId: string, companyId: string): Promise<WorkflowAction[]> {
     return prisma.workflowAction.findMany({
       where: { workflowId, workflow: { companyId } },
-      orderBy: { order: 'asc' },
+      orderBy: { actionOrder: 'asc' },
     });
   }
 

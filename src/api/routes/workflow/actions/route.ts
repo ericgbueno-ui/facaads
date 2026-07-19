@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       workflowId: body.workflowId,
       actionType: body.actionType,
       config: body.config,
-      order: body.order,
+      actionOrder: body.order,
     });
 
     return NextResponse.json(action, { status: 201 });
@@ -64,7 +64,7 @@ export async function PATCH(req: NextRequest, context?: { params: Record<string,
 
     const action = await actionService.updateAction(actionId, workflowId, companyId, {
       config: body.config,
-      order: body.order,
+      actionOrder: body.order,
       isActive: body.isActive,
     });
 

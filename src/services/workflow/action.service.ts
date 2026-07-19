@@ -18,17 +18,17 @@ export class ActionService {
       workflowId: dto.workflowId,
       actionType: dto.actionType,
       config: dto.config,
-      order: dto.order || 0,
+      actionOrder: dto.actionOrder || 0,
     });
 
     this.eventBus.emit('workflow:action:created', { companyId, workflowId: dto.workflowId, actionId: action.id });
     return action;
   }
 
-  async updateAction(actionId: string, workflowId: string, companyId: string, updates: Partial<{ config: Record<string, any>; order: number; isActive: boolean }>) {
+  async updateAction(actionId: string, workflowId: string, companyId: string, updates: Partial<{ config: Record<string, any>; actionOrder: number; isActive: boolean }>) {
     const action = await this.repository.updateAction(actionId, workflowId, companyId, {
       config: updates.config,
-      order: updates.order,
+      actionOrder: updates.actionOrder,
       isActive: updates.isActive,
     });
 
