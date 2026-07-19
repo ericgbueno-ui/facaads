@@ -63,6 +63,7 @@ model Company {
   auditLogs             AuditLog[]
   knowledge             CompanyKnowledge?
   leadInteractions      LeadInteraction[]
+  aiAnalyses            AIAnalysis[]
 
   // MASTER 06: Revenue Engine
   revenueSales          RevenueSale[]
@@ -721,6 +722,7 @@ model Lead {
   company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   campaignRef Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   revenueSales RevenueSale[]
+  aiAnalyses   AIAnalysis[]
   attendances  Attendance[]
   attendanceHistoryEntries AttendanceHistory[]
   reminders    Reminder[]
@@ -956,6 +958,7 @@ model WhatsAppConversation {
 
   company  Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
   messages WhatsAppMessage[]
+  analyses AIAnalysis[]
 
   @@unique([companyId, phoneNumber])
   @@index([companyId])
@@ -1077,6 +1080,29 @@ model LeadInteraction {
   @@index([sourceType])
   @@index([resultType])
   @@index([createdAt])
+}
+
+model AIAnalysis {
+  id             String    @id @default(cuid())
+  companyId      String
+  conversationId String?
+  leadId         String?
+  type           String
+  result         Json
+  confidence     Float?
+  model          String?
+  tokensUsed     Int?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  company        Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  conversation   WhatsAppConversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  lead           Lead?             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([conversationId])
+  @@index([leadId])
+  @@index([type])
 }
 
 // ==================================================================================
