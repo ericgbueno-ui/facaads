@@ -51,6 +51,8 @@ export async function POST(req: NextRequest) {
         externalId: data.external_id,
         metadata: data.metadata,
         pushBackStatus: "pending",
+        dataOrigin: "LIVE",
+        sourceSystem: data.source_type,
       },
     });
 

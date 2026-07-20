@@ -127,8 +127,8 @@ export async function syncTikTokAdAccount(
 
     await prisma.metricSnapshot.upsert({
       where: { campaignId_date: { campaignId, date } },
-      update: payload,
-      create: { campaignId, date, ...payload },
+      update: { ...payload, dataOrigin: "LIVE", sourceSystem: "TIKTOK", sourcedAt: new Date() },
+      create: { campaignId, date, ...payload, dataOrigin: "LIVE", sourceSystem: "TIKTOK", sourceExternalId: `${campaignId}:${date.toISOString().slice(0, 10)}` },
     });
     snapshots++;
   }

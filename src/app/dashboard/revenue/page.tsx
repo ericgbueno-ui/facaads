@@ -13,7 +13,7 @@ import {
 } from '@/components/revenue';
 import { BarChart3, TrendingUp, Users, Target } from 'lucide-react';
 
-const COMPANY_ID = 'company-123'; // Substituir por contexto real
+const COMPANY_ID = process.env.NEXT_PUBLIC_DEFAULT_COMPANY_ID ?? '';
 
 export default function RevenueDashboard() {
   const { getKPIs, loading: kpisLoading } = useKPIs({ companyId: COMPANY_ID });
@@ -29,6 +29,7 @@ export default function RevenueDashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!COMPANY_ID) return;
       try {
         const kpiData = await getKPIs();
         setKpis(kpiData);
@@ -52,20 +53,8 @@ export default function RevenueDashboard() {
     fetchData();
   }, []);
 
-  // Mock data para demonstração
-  const revenueChartData = [
-    { date: '01/07', revenue: 45000, cost: 18000, profit: 27000 },
-    { date: '02/07', revenue: 52000, cost: 20800, profit: 31200 },
-    { date: '03/07', revenue: 48000, cost: 19200, profit: 28800 },
-    { date: '04/07', revenue: 61000, cost: 24400, profit: 36600 },
-    { date: '05/07', revenue: 55000, cost: 22000, profit: 33000 },
-  ];
-
-  const forecastData = [
-    { date: '08/2026', projected: 145000, confidence: 0.85 },
-    { date: '09/2026', projected: 155000, confidence: 0.80 },
-    { date: '10/2026', projected: 162000, confidence: 0.75 },
-  ];
+  const revenueChartData: Array<{ date: string; revenue: number; cost: number; profit: number }> = [];
+  const forecastData: Array<{ date: string; projected: number; confidence: number }> = [];
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -80,37 +69,37 @@ export default function RevenueDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <KPICard
             label="Receita Total"
-            value={kpis?.roas?.value || 261000}
+            value={kpis?.revenue?.value ?? 0}
             unit="R$"
             trend="up"
-            changePercent={12.5}
+            changePercent={0}
             icon={<TrendingUp size={20} />}
             color="green"
             loading={kpisLoading}
           />
           <KPICard
             label="ROAS"
-            value={kpis?.roas?.value || 3.45}
+            value={kpis?.roas?.value ?? 0}
             trend="up"
-            changePercent={8.2}
+            changePercent={0}
             color="blue"
             loading={kpisLoading}
           />
           <KPICard
             label="Margem de Lucro"
-            value={kpis?.margin?.value || 60}
+            value={kpis?.margin?.value ?? 0}
             unit="%"
             trend="up"
-            changePercent={5.1}
+            changePercent={0}
             color="green"
             loading={kpisLoading}
           />
           <KPICard
             label="CAC"
-            value={kpis?.cac?.value || 150.5}
+            value={kpis?.cac?.value ?? 0}
             unit="R$"
             trend="down"
-            changePercent={3.2}
+            changePercent={0}
             icon={<Users size={20} />}
             color="amber"
             loading={kpisLoading}
@@ -161,14 +150,10 @@ export default function RevenueDashboard() {
         {/* Loss Analysis */}
         <div className="mt-8">
           <LossAnalysis
-            totalLosses={45}
-            totalValueLost={67500}
-            lossRate={18.5}
-            byReason={[
-              { reason: 'Preço', count: 20, totalValueLost: 30000, percent: 44.4 },
-              { reason: 'Concorrência', count: 15, totalValueLost: 22500, percent: 33.3 },
-              { reason: 'Sem Interesse', count: 10, totalValueLost: 15000, percent: 22.2 },
-            ]}
+            totalLosses={0}
+            totalValueLost={0}
+            lossRate={0}
+            byReason={[]}
           />
         </div>
       </div>

@@ -22,11 +22,18 @@ function pctDelta(current: number, previous: number): number {
  */
 export async function GET(req: NextRequest) {
   try {
-    // Tentar autenticação, mas permitir acesso sem auth em desenvolvimento
     const session = await auth();
-    // if (!session?.user?.id) {
-    //   return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
-    // }
+    if (!session?.user?.id) {
+      return NextResponse.json({ ok: false, error: "Não autenticado" }, { status: 401 });
+    }
+
+    const memberships = await prisma.companyUser.findMany({
+      where: { userId: session.user.id },
+      select: { companyId: true },
+    });
+    const companyIds = memberships.map((membership) => membership.companyId);
+    const companyWhere = { companyId: { in: companyIds } };
+    const trustedData = { dataOrigin: { not: "DEMO" as const } };
 
     const days = Math.min(parseInt(req.nextUrl.searchParams.get("days") || "30"), 90);
     const now = new Date();
@@ -53,9 +60,10 @@ export async function GET(req: NextRequest) {
       leadsByCampaign,
       salesByCampaign,
       prevSalesByCompany,
+      salesForSeries,
     ] = await Promise.all([
       prisma.metricSnapshot.findMany({
-        where: { date: { gte: periodStart } },
+        where: { ...trustedData, date: { gte: periodStart }, campaign: companyWhere },
         select: {
           date: true,
           spend: true,
@@ -73,80 +81,84 @@ export async function GET(req: NextRequest) {
         },
       }),
       prisma.metricSnapshot.aggregate({
-        where: { date: { gte: prevStart, lt: periodStart } },
+        where: { ...trustedData, date: { gte: prevStart, lt: periodStart }, campaign: companyWhere },
         _sum: { spend: true, conversionValue: true, clicks: true, impressions: true },
       }),
-      prisma.lead.count({ where: { createdAt: { gte: periodStart } } }),
-      prisma.lead.count({ where: { createdAt: { gte: prevStart, lt: periodStart } } }),
+      prisma.lead.count({ where: { ...companyWhere, ...trustedData, createdAt: { gte: periodStart } } }),
+      prisma.lead.count({ where: { ...companyWhere, ...trustedData, createdAt: { gte: prevStart, lt: periodStart } } }),
       prisma.sale.aggregate({
-        where: { createdAt: { gte: periodStart } },
+        where: { ...companyWhere, ...trustedData, paymentStatus: "completed", createdAt: { gte: periodStart } },
         _sum: { amount: true },
         _count: true,
       }),
       prisma.sale.aggregate({
-        where: { createdAt: { gte: prevStart, lt: periodStart } },
+        where: { ...companyWhere, ...trustedData, paymentStatus: "completed", createdAt: { gte: prevStart, lt: periodStart } },
         _sum: { amount: true },
         _count: true,
       }),
       prisma.sale.groupBy({
         by: ["companyId"],
-        where: { createdAt: { gte: periodStart } },
+        where: { ...companyWhere, ...trustedData, paymentStatus: "completed", createdAt: { gte: periodStart } },
         _sum: { amount: true },
         orderBy: { _sum: { amount: "desc" } },
         take: 5,
       }),
-      prisma.company.findMany({ select: { id: true, name: true, segment: true } }),
+      prisma.company.findMany({ where: { id: { in: companyIds } }, select: { id: true, name: true, segment: true } }),
       prisma.sale.findMany({
-        where: { createdAt: { gte: periodStart } },
+        where: { ...companyWhere, ...trustedData, paymentStatus: "completed", createdAt: { gte: periodStart } },
         orderBy: { createdAt: "desc" },
         take: 3,
         select: { createdAt: true, company: { select: { name: true } } },
       }),
       prisma.lead.findMany({
-        where: { createdAt: { gte: periodStart } },
+        where: { ...companyWhere, ...trustedData, createdAt: { gte: periodStart } },
         orderBy: { createdAt: "desc" },
         take: 3,
         select: { createdAt: true, name: true, company: { select: { name: true } } },
       }),
       prisma.whatsAppConversation.findMany({
+        where: companyWhere,
         orderBy: { createdAt: "desc" },
         take: 3,
         select: { createdAt: true, company: { select: { name: true } } },
       }),
       prisma.lead.count({
-        where: { createdAt: { gte: periodStart }, estimatedValue: { not: null } },
+        where: { ...companyWhere, ...trustedData, createdAt: { gte: periodStart }, qualified: true },
       }),
-      prisma.whatsAppConversation.count({ where: { createdAt: { gte: periodStart } } }),
+      prisma.whatsAppConversation.count({ where: { ...companyWhere, createdAt: { gte: periodStart } } }),
       prisma.sale.count({
-        where: { createdAt: { gte: periodStart }, paymentStatus: "completed" },
+        where: { ...companyWhere, ...trustedData, createdAt: { gte: periodStart }, paymentStatus: "completed" },
       }),
       prisma.lead.groupBy({
         by: ["campaignId"],
-        where: { createdAt: { gte: periodStart }, campaignId: { not: null } },
+        where: { ...companyWhere, ...trustedData, createdAt: { gte: periodStart }, campaignId: { not: null } },
         _count: true,
       }),
       prisma.sale.groupBy({
         by: ["campaignId"],
-        where: { createdAt: { gte: periodStart }, campaignId: { not: null } },
+        where: { ...companyWhere, ...trustedData, paymentStatus: "completed", createdAt: { gte: periodStart }, campaignId: { not: null } },
         _count: true,
+        _sum: { amount: true },
       }),
       prisma.sale.groupBy({
         by: ["companyId"],
-        where: { createdAt: { gte: prevStart, lt: periodStart } },
+        where: { ...companyWhere, ...trustedData, paymentStatus: "completed", createdAt: { gte: prevStart, lt: periodStart } },
         _sum: { amount: true },
+      }),
+      prisma.sale.findMany({
+        where: { ...companyWhere, ...trustedData, paymentStatus: "completed", createdAt: { gte: periodStart } },
+        select: { createdAt: true, amount: true },
       }),
     ]);
 
     // --- KPIs ---
     const investment = snapshots.reduce((acc, s) => acc + Number(s.spend), 0);
-    const adRevenue = snapshots.reduce((acc, s) => acc + Number(s.conversionValue || 0), 0);
     const salesRevenue = Number(salesAgg._sum.amount || 0);
-    const revenue = salesRevenue > 0 ? salesRevenue : adRevenue;
+    const revenue = salesRevenue;
 
     const prevInvestment = Number(prevSnapshots._sum.spend || 0);
-    const prevAdRevenue = Number(prevSnapshots._sum.conversionValue || 0);
     const prevSalesRevenue = Number(prevSalesAgg._sum.amount || 0);
-    const prevRevenue = prevSalesRevenue > 0 ? prevSalesRevenue : prevAdRevenue;
+    const prevRevenue = prevSalesRevenue;
 
     const salesCount = salesAgg._count;
     const prevSalesCount = prevSalesAgg._count;
@@ -161,7 +173,12 @@ export async function GET(req: NextRequest) {
       const key = s.date.toISOString().slice(0, 10);
       const entry = byDay.get(key) || { receita: 0, investimento: 0 };
       entry.investimento += Number(s.spend);
-      entry.receita += Number(s.conversionValue || 0);
+      byDay.set(key, entry);
+    }
+    for (const sale of salesForSeries) {
+      const key = sale.createdAt.toISOString().slice(0, 10);
+      const entry = byDay.get(key) || { receita: 0, investimento: 0 };
+      entry.receita += Number(sale.amount);
       byDay.set(key, entry);
     }
     const series = [...byDay.entries()]
@@ -207,12 +224,16 @@ export async function GET(req: NextRequest) {
       byCampaign.set(s.campaign.id, entry);
     }
     const leadsPerCampaign = new Map(leadsByCampaign.map((l) => [l.campaignId, l._count]));
-    const salesPerCampaign = new Map(salesByCampaign.map((s) => [s.campaignId, s._count]));
+    const salesPerCampaign = new Map(
+      salesByCampaign.map((s) => [s.campaignId, { count: s._count, revenue: Number(s._sum.amount || 0) }])
+    );
     const topCampaigns = [...byCampaign.entries()]
       .sort(([, a], [, b]) => b.spend - a.spend)
       .slice(0, 5)
       .map(([id, c]) => {
-        const sales = salesPerCampaign.get(id) || c.conversions;
+        const attributedSales = salesPerCampaign.get(id);
+        const sales = attributedSales?.count || 0;
+        const attributedRevenue = attributedSales?.revenue || 0;
         return {
           id,
           name: c.name,
@@ -220,9 +241,9 @@ export async function GET(req: NextRequest) {
           invest: c.spend,
           leads: leadsPerCampaign.get(id) || 0,
           sales,
-          revenue: c.revenue,
-          roas: c.spend > 0 ? c.revenue / c.spend : 0,
-          cpa: sales > 0 ? c.spend / sales : 0,
+          revenue: attributedRevenue,
+          roas: c.spend > 0 && sales > 0 ? attributedRevenue / c.spend : null,
+          cpa: sales > 0 ? c.spend / sales : null,
         };
       });
 
@@ -302,6 +323,16 @@ export async function GET(req: NextRequest) {
       },
       ok: true,
       hasData,
+      dataQuality: {
+        revenueSource: "completed_sales",
+        mediaConversionValue: snapshots.reduce((acc, s) => acc + Number(s.conversionValue || 0), 0),
+        roasAvailable: investment > 0 && salesCount > 0,
+        rules: [
+          "Receita considera somente vendas com pagamento concluído.",
+          "Conversões da plataforma não são substituídas por vendas.",
+          "ROAS financeiro não usa valor de conversão reportado pela mídia como fallback.",
+        ],
+      },
       kpis: {
         investment: { value: investment, delta: pctDelta(investment, prevInvestment) },
         revenue: { value: revenue, delta: pctDelta(revenue, prevRevenue) },
@@ -319,11 +350,10 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     console.error("Dashboard overview error:", error);
-    // Retornar dados mock se banco não estiver disponível
-    const { mockDashboardData } = await import("@/lib/mock-db");
     return NextResponse.json({
-      ...mockDashboardData,
-      ok: true,
-    });
+      ok: false,
+      code: "DASHBOARD_DATA_UNAVAILABLE",
+      error: "Dados do dashboard indisponíveis.",
+    }, { status: 503 });
   }
 }

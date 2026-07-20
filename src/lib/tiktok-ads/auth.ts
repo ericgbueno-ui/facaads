@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
 interface TikTokAdsTokenPayload {
+  companyId: string;
   accessToken: string;
   advertiserId: string;
   accountName: string;
@@ -17,6 +18,7 @@ export async function storeTikTokAdsToken(payload: TikTokAdsTokenPayload) {
     update: {
       name: payload.accountName,
       accessToken: payload.accessToken,
+      companyId: payload.companyId,
       lastSyncedAt: new Date(),
     },
     create: {
@@ -24,6 +26,7 @@ export async function storeTikTokAdsToken(payload: TikTokAdsTokenPayload) {
       externalAccountId: payload.advertiserId,
       name: payload.accountName,
       accessToken: payload.accessToken,
+      companyId: payload.companyId,
       lastSyncedAt: new Date(),
     },
   });
@@ -42,10 +45,11 @@ export async function getTikTokAdsAccessToken(advertiserId: string) {
   return account?.accessToken || null;
 }
 
-export async function getUserTikTokAdsAccounts() {
+export async function getUserTikTokAdsAccounts(companyIds: string[]) {
   return prisma.adAccount.findMany({
     where: {
       channel: "TIKTOK",
+      companyId: { in: companyIds },
     },
   });
 }

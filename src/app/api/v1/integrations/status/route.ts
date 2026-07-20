@@ -1,70 +1,19 @@
-/**
- * GET /api/v1/integrations/status
- * Status das integrações
- */
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getIntegrationCore } from '@/core/integrations/core/integration-core';
-import { getQueueManager } from '@/core/integrations/queue/queue-manager';
-import { getResilienceManager } from '@/core/integrations/resilience/rate-limiter';
-import { getScheduler } from '@/core/integrations/scheduler/scheduler-engine';
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { validateCompanyAccess } from "@/lib/auth-middleware";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
-  try {
-    const connectionId = request.nextUrl.searchParams.get('connectionId');
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const companyId = request.nextUrl.searchParams.get("companyId");
+  if (!companyId) return NextResponse.json({ error: "companyId é obrigatório" }, { status: 400 });
+  const access = await validateCompanyAccess(session.user.id, companyId);
+  if (!access.valid) return NextResponse.json({ error: access.error }, { status: 403 });
 
-    if (!connectionId) {
-      // Status geral do sistema
-      const core = getIntegrationCore();
-      const queueManager = getQueueManager();
-      const resilienceManager = getResilienceManager();
-      const scheduler = getScheduler();
-
-      const systemStatus = {
-        integration_core: await core.getStatus(),
-        queue_manager: await queueManager.getStatus(),
-        resilience: resilienceManager.getStatus(),
-        scheduler: scheduler.getStatus(),
-        timestamp: new Date(),
-      };
-
-      return NextResponse.json(systemStatus);
-    } else {
-      // Status de uma conexão específica
-      const core = getIntegrationCore();
-      const connection = await core.getConnection(connectionId);
-
-      if (!connection) {
-        return NextResponse.json(
-          { error: 'Conexão não encontrada' },
-          { status: 404 }
-        );
-      }
-
-      const provider = core.getProvider(connection.provider);
-
-      if (!provider) {
-        return NextResponse.json(
-          { error: 'Provider não encontrado' },
-          { status: 404 }
-        );
-      }
-
-      const status = await provider.status(connectionId);
-
-      return NextResponse.json({
-        connectionId,
-        provider: connection.provider,
-        status,
-        lastSync: connection.lastSyncAt,
-        connected: connection.status === 'connected',
-        timestamp: new Date(),
-      });
-    }
-  } catch (error) {
-    return NextResponse.json(
-      { error: (error as Error).message },
-      { status: 500 }
-    );
-  }
+  const integrations = await prisma.companyIntegration.findMany({
+    where: { companyId },
+    select: { id: true, type: true, name: true, status: true, connectedAt: true, lastSyncAt: true, lastErrorAt: true, lastError: true, testedAt: true },
+  });
+  return NextResponse.json({ ok: true, companyId, integrations, timestamp: new Date().toISOString() });
 }

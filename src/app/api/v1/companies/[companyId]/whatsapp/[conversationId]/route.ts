@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validateCompanyAccess } from "@/lib/auth-middleware";
 import { auth } from "@/lib/auth";
+import { sendWhatsAppText } from "@/lib/whatsapp/send-message";
 
 export const dynamic = "force-dynamic";
 
@@ -116,39 +117,21 @@ export async function POST(
       );
     }
 
-    // TODO: Integrar com WhatsApp Cloud API para enviar mensagem
-    // const whatsappResponse = await sendWhatsAppMessage(
-    //   phoneNumber,
-    //   message,
-    //   accessToken
-    // );
-
-    // Salvar mensagem como enviada (simulado)
+    const sent = await sendWhatsAppText(companyId, conversation.phoneNumber, message);
     const savedMessage = await prisma.whatsAppMessage.create({
       data: {
         conversationId,
         role: "assistant",
         content: message,
+        externalId: sent.externalId,
         type: "text",
+        dataOrigin: "LIVE",
+        sourceSystem: "WHATSAPP",
       },
     });
-
-    // Atualizar conversa
-    await prisma.whatsAppConversation.update({
-      where: { id: conversationId },
-      data: { lastMessageAt: new Date() },
-    });
-
-    // Log de auditoria
+    await prisma.whatsAppConversation.update({ where: { id: conversationId }, data: { lastMessageAt: new Date() } });
     await prisma.auditLog.create({
-      data: {
-        companyId,
-        userId: session.user.id,
-        action: "create",
-        resource: "WhatsAppMessage",
-        resourceId: savedMessage.id,
-        description: "Mensagem enviada via WhatsApp",
-      },
+      data: { companyId, userId: session.user.id, action: "create", resource: "WhatsAppMessage", resourceId: savedMessage.id, description: "Mensagem confirmada pela WhatsApp Cloud API" },
     });
 
     return NextResponse.json(

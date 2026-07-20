@@ -70,7 +70,7 @@ export async function requireAuth(
     const email = session.user.email;
 
     // Se a rota contém /companies/:id, validar acesso
-    const companyIdMatch = req.nextUrl.pathname.match(/\/companies\/([a-z0-9]+)/i);
+    const companyIdMatch = req.nextUrl.pathname.match(/\/companies\/([^/]+)/i);
     if (companyIdMatch) {
       const companyId = companyIdMatch[1];
       const validation = await validateCompanyAccess(userId, companyId);
@@ -121,7 +121,7 @@ export async function requireAuth(
  */
 export function getCompanyIdFromRequest(req: NextRequest): string | null {
   // Tenta extrair de /companies/:id
-  const pathMatch = req.nextUrl.pathname.match(/\/companies\/([a-z0-9]+)/i);
+  const pathMatch = req.nextUrl.pathname.match(/\/companies\/([^/]+)/i);
   if (pathMatch) return pathMatch[1];
 
   // Tenta extrair de ?companyId=...

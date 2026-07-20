@@ -1,3 +1,7 @@
+# ⚠️ DOCUMENTO HISTÓRICO — NÃO REPRESENTA O ESTADO ATUAL
+
+> Os conjuntos descritos abaixo eram sintéticos/realistas, não dados reais auditáveis. O seed correspondente foi removido em 20/07/2026. Consulte `ETAPA_1_DADOS_CONFIAVEIS.md` para o status operacional válido.
+
 # 📊 Atualização de Dados Reais - FacaAds
 
 Este documento descreve todas as mudanças realizadas para popular o sistema com dados reais de cada canal de publicidade.

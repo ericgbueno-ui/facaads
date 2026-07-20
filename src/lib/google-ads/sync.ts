@@ -162,6 +162,9 @@ export async function syncGoogleAdsAccount(
         clicks: row.clicks,
         conversions: row.conversions,
         conversionValue: row.conversionValue,
+        dataOrigin: "LIVE",
+        sourceSystem: "GOOGLE",
+        sourcedAt: new Date(),
       },
       create: {
         campaignId,
@@ -171,6 +174,9 @@ export async function syncGoogleAdsAccount(
         clicks: row.clicks,
         conversions: row.conversions,
         conversionValue: row.conversionValue,
+        dataOrigin: "LIVE",
+        sourceSystem: "GOOGLE",
+        sourceExternalId: `${campaignId}:${row.date}`,
       },
     });
     snapshots++;

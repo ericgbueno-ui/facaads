@@ -29,9 +29,7 @@ export async function GET(
   { params }: { params: Promise<{ companyId: string }> }
 ) {
   const authResult = await requireAuth(request);
-  if (authResult.error) {
-    return NextResponse.json({ error: authResult.error }, { status: 401 });
-  }
+  if (authResult.response) return authResult.response;
 
   try {
     const { companyId } = await params;
@@ -46,7 +44,7 @@ export async function GET(
     const skip = (page - 1) * limit;
 
     // Construir filtro
-    const where: any = { companyId };
+    const where: any = { companyId, dataOrigin: { not: "DEMO" } };
     if (status) where.paymentStatus = status;
     if (source) where.source = source;
     if (startDate || endDate) {
@@ -97,9 +95,7 @@ export async function POST(
   { params }: { params: Promise<{ companyId: string }> }
 ) {
   const authResult = await requireAuth(request);
-  if (authResult.error) {
-    return NextResponse.json({ error: authResult.error }, { status: 401 });
-  }
+  if (authResult.response) return authResult.response;
 
   try {
     const { companyId } = await params;
@@ -122,7 +118,10 @@ export async function POST(
     const sale = await prisma.sale.create({
       data: {
         ...data,
-        companyId: params.id,
+        companyId,
+        dataOrigin: "MANUAL",
+        sourceSystem: "HERGE",
+        actorUserId: authResult.context?.userId,
         amount: data.amount,
         profit: data.profit,
         commission: data.commission,

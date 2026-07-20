@@ -3,11 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { storeGoogleAdsToken } from "@/lib/google-ads/auth";
 import { z } from "zod";
+import { validateCompanyAccess } from "@/lib/auth-middleware";
 
 const ConnectGoogleSchema = z.object({
   refreshToken: z.string().min(1, "Refresh token required"),
   customerId: z.string().min(1, "Customer ID required"),
   accountName: z.string().min(1, "Account name required"),
+  companyId: z.string().min(1, "Company ID required"),
 });
 
 export async function POST(req: NextRequest) {
@@ -19,7 +21,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { refreshToken, customerId, accountName } = ConnectGoogleSchema.parse(body);
+    const { refreshToken, customerId, accountName, companyId } = ConnectGoogleSchema.parse(body);
+    const access = await validateCompanyAccess(session.user.id!, companyId);
+    if (!access.valid) return NextResponse.json({ error: access.error }, { status: 403 });
 
     // Validate token by trying to get access token
     const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
@@ -44,6 +48,7 @@ export async function POST(req: NextRequest) {
       refreshToken,
       customerId,
       accountName,
+      companyId,
     });
 
     return NextResponse.json({

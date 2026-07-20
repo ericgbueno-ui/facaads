@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Sidebar } from "@/components/Sidebar";
 import { KPICard } from "@/components/KPICard";
@@ -14,36 +14,14 @@ import {
   Filter,
 } from "lucide-react";
 
-const mockRevenueData = [
-  { date: "01/07", revenue: 4200, investment: 800 },
-  { date: "02/07", revenue: 5100, investment: 920 },
-  { date: "03/07", revenue: 4800, investment: 880 },
-  { date: "04/07", revenue: 6300, investment: 1100 },
-  { date: "05/07", revenue: 7200, investment: 1200 },
-  { date: "06/07", revenue: 8100, investment: 1300 },
-  { date: "07/07", revenue: 9800, investment: 1500 },
-  { date: "08/07", revenue: 10500, investment: 1600 },
-];
+const revenueData: Array<{ date: string; revenue: number; investment: number }> = [];
 
-const mockPerformanceData = [
-  { channel: "Meta", value: 42 },
-  { channel: "Google", value: 28 },
-  { channel: "TikTok", value: 18 },
-  { channel: "Shopee", value: 12 },
-];
+const performanceData: Array<{ channel: string; value: number }> = [];
 
-const mockSalesData = [
-  { date: "01/07", leads: 12, sales: 3, conversions: 25 },
-  { date: "02/07", leads: 15, sales: 4, conversions: 27 },
-  { date: "03/07", leads: 18, sales: 5, conversions: 28 },
-  { date: "04/07", leads: 22, sales: 7, conversions: 32 },
-  { date: "05/07", leads: 25, sales: 8, conversions: 32 },
-  { date: "06/07", leads: 28, sales: 9, conversions: 32 },
-  { date: "07/07", leads: 32, sales: 11, conversions: 34 },
-  { date: "08/07", leads: 35, sales: 13, conversions: 37 },
-];
+const salesData: Array<{ date: string; leads: number; sales: number; conversions: number }> = [];
 
 export function FinancialDashboard({ companyId }: { companyId: string }) {
+  void companyId;
   const [dateRange, setDateRange] = useState({
     start: "2025-07-01",
     end: "2025-07-08",
@@ -52,8 +30,8 @@ export function FinancialDashboard({ companyId }: { companyId: string }) {
   const kpis = [
     {
       label: "Receita Total",
-      value: "R$ 87.300",
-      change: 28.6,
+      value: "R$ 0,00",
+      change: 0,
       changeLabel: "vs. período anterior",
       icon: <DollarSign className="text-green-400" />,
       color: "green" as const,
@@ -61,8 +39,8 @@ export function FinancialDashboard({ companyId }: { companyId: string }) {
     },
     {
       label: "Lucro",
-      value: "R$ 26.190",
-      change: 32.4,
+      value: "R$ 0,00",
+      change: 0,
       changeLabel: "vs. período anterior",
       icon: <TrendingUp className="text-blue-400" />,
       color: "blue" as const,
@@ -70,8 +48,8 @@ export function FinancialDashboard({ companyId }: { companyId: string }) {
     },
     {
       label: "Ticket Médio",
-      value: "R$ 2.450",
-      change: 12.3,
+      value: "R$ 0,00",
+      change: 0,
       changeLabel: "vs. período anterior",
       icon: <BarChart3 className="text-orange-400" />,
       color: "orange" as const,
@@ -79,8 +57,8 @@ export function FinancialDashboard({ companyId }: { companyId: string }) {
     },
     {
       label: "Taxa Conversão",
-      value: "32,6%",
-      change: 6.3,
+      value: "0,0%",
+      change: 0,
       changeLabel: "vs. período anterior",
       icon: <Target className="text-purple-400" />,
       color: "purple" as const,
@@ -138,7 +116,7 @@ export function FinancialDashboard({ companyId }: { companyId: string }) {
             <h3 className="mb-6 text-lg font-semibold text-slate-100">
               Receita vs Investimento
             </h3>
-            <RevenueChart data={mockRevenueData} />
+            <RevenueChart data={revenueData} />
           </div>
 
           {/* Performance by Channel */}
@@ -146,7 +124,7 @@ export function FinancialDashboard({ companyId }: { companyId: string }) {
             <h3 className="mb-6 text-lg font-semibold text-slate-100">
               Performance por Canal
             </h3>
-            <PerformanceChart data={mockPerformanceData} />
+            <PerformanceChart data={performanceData} />
           </div>
         </div>
 
@@ -155,15 +133,15 @@ export function FinancialDashboard({ companyId }: { companyId: string }) {
           <h3 className="mb-6 text-lg font-semibold text-slate-100">
             Leads, Vendas e Conversões
           </h3>
-          <SalesChart data={mockSalesData} />
+          <SalesChart data={salesData} />
         </div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {[
-            { label: "Receita Total", value: "R$ 87.300", color: "green" },
-            { label: "Lucro Total", value: "R$ 26.190", color: "blue" },
-            { label: "Margem Lucro", value: "30,0%", color: "orange" },
+            { label: "Receita Total", value: "R$ 0,00", color: "green" },
+            { label: "Lucro Total", value: "R$ 0,00", color: "blue" },
+            { label: "Margem Lucro", value: "0,0%", color: "orange" },
           ].map((item, i) => (
             <div
               key={i}

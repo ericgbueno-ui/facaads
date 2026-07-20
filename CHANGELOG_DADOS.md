@@ -1,3 +1,7 @@
+# ⚠️ REGISTRO HISTÓRICO
+
+> As referências a “dados reais” neste arquivo descrevem dados sintéticos/realistas. Elas não comprovam integração nem origem real. Status vigente: `ETAPA_1_DADOS_CONFIAVEIS.md`.
+
 # 📝 Changelog - Atualização de Dados Reais
 
 **Data**: 18 de julho de 2024  

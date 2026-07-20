@@ -19,16 +19,9 @@ interface TikTokConversionResponse {
  * TODO: Implementar com TikTok Business API autenticado
  */
 export async function sendTikTokConversion(
-  data: TikTokConversionData
+  _data: TikTokConversionData
 ): Promise<TikTokConversionResponse> {
   // Por enquanto apenas simular
-  const externalEventId = `tt_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  throw new Error("TIKTOK_CONVERSIONS_NOT_CONFIGURED");
 
-  console.log(
-    `[TikTok] Conversão simulada: ${data.value} BRL em ${data.eventTime.toISOString()}`
-  );
-
-  return {
-    externalEventId,
-  };
 }

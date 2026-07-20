@@ -97,25 +97,15 @@ export async function scrapeWebsite(url: string): Promise<{
 }
 
 /**
- * Scraper para Instagram (simulado - em prod usaria Graph API)
+ * Coleta do Instagram indisponível até integração com a Graph API.
  */
 export async function scrapeInstagram(handle: string): Promise<{
   bio: string;
   posts: Array<{ caption: string; likes: number }>;
   followers: number;
 } | null> {
-  try {
-    // TODO: Implementar com Instagram Graph API
-    // Por enquanto, apenas estrutura
-    return {
-      bio: "",
-      posts: [],
-      followers: 0,
-    };
-  } catch (error) {
-    console.error("Erro ao scrape Instagram:", error);
-    return null;
-  }
+  void handle;
+  return null;
 }
 
 /**

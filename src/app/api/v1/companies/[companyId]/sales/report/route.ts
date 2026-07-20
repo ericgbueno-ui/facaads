@@ -11,9 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ companyId: string }> }
 ) {
   const authResult = await requireAuth(request);
-  if (authResult.error) {
-    return NextResponse.json({ error: authResult.error }, { status: 401 });
-  }
+  if (authResult.response) return authResult.response;
 
   try {
     const { companyId } = await params;
@@ -22,7 +20,7 @@ export async function GET(
     const endDate = searchParams.get("endDate");
 
     // Construir filtro de data
-    const where: any = { companyId };
+    const where: any = { companyId, dataOrigin: { not: "DEMO" } };
     if (startDate || endDate) {
       where.createdAt = {};
       if (startDate) where.createdAt.gte = new Date(startDate);

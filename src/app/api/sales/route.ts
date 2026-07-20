@@ -27,6 +27,9 @@ export async function POST(req: NextRequest) {
         amount: new Prisma.Decimal(b.amount),
         metadata: { account: b.account, accountName: b.accountName ?? null, phone: b.phone ?? null, note: b.note ?? null, by: session.user.email },
         pushBackStatus: "manual",
+        dataOrigin: "MANUAL",
+        sourceSystem: "HERGE",
+        actorUserId: session.user.id,
       },
     });
     return NextResponse.json({ ok: true, id: ev.id }, { status: 201 });

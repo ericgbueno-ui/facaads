@@ -75,10 +75,10 @@ export class KPIService {
     const campaign = await prisma.campaign.findUnique({
       where: { id: campaignId },
       include: {
-        snapshots: true,
-        conversions: true,
-        leads: true,
-        sales: true,
+        snapshots: { where: { dataOrigin: { not: 'DEMO' } } },
+        conversions: { where: { dataOrigin: { not: 'DEMO' } } },
+        leads: { where: { dataOrigin: { not: 'DEMO' } } },
+        sales: { where: { dataOrigin: { not: 'DEMO' }, paymentStatus: 'completed' } },
       },
     });
 
@@ -92,19 +92,16 @@ export class KPIService {
     const totalImpressions = campaign.snapshots.reduce((sum, s) => sum + s.impressions, 0);
     const totalClicks = campaign.snapshots.reduce((sum, s) => sum + s.clicks, 0);
     const totalConversions = campaign.snapshots.reduce((sum, s) => sum + s.conversions, 0);
-    const totalRevenue = campaign.snapshots.reduce(
-      (sum, s) => sum + Number(s.conversionValue || 0),
-      0
-    );
+    const totalRevenue = campaign.sales.reduce((sum, sale) => sum + Number(sale.amount || 0), 0);
 
     return {
       impressions: totalImpressions,
       clicks: totalClicks,
       leads: campaign.leads.length,
       qualified: campaign.leads.filter((l) => l.qualified).length,
-      deals: campaign.leads.length, // placeholder
+      deals: 0,
       sales: campaign.sales.length,
-      customers: 0, // derivado de sales
+      customers: campaign.sales.length,
       clickThroughRate: totalImpressions > 0 ? totalClicks / totalImpressions : 0,
       costPerClick: totalClicks > 0 ? totalSpend / totalClicks : 0,
       costPerLead: campaign.leads.length > 0 ? totalSpend / campaign.leads.length : 0,
@@ -113,14 +110,14 @@ export class KPIService {
       spend: totalSpend,
       revenue: totalRevenue,
       grossProfit: totalRevenue - totalSpend,
-      netProfit: 0, // seria revenue - spend - custos
+      netProfit: campaign.sales.reduce((sum, sale) => sum + Number(sale.profit || 0), 0),
       marginPercent: totalRevenue > 0 ? ((totalRevenue - totalSpend) / totalRevenue) * 100 : 0,
       roas: totalSpend > 0 ? totalRevenue / totalSpend : 0,
       roi: totalSpend > 0 ? ((totalRevenue - totalSpend) / totalSpend) * 100 : 0,
-      ltv: 0, // seria calculado de customer lifetime value
-      cltv: 0, // seria ltv / cac
+      ltv: 0,
+      cltv: 0,
       averageTicket: campaign.sales.length > 0 ? totalRevenue / campaign.sales.length : 0,
-      averageOrderValue: 0,
+      averageOrderValue: campaign.sales.length > 0 ? totalRevenue / campaign.sales.length : 0,
     };
   }
 
@@ -250,6 +247,7 @@ export class KPIService {
     const leads = await prisma.lead.findMany({
       where: {
         companyId,
+        dataOrigin: { not: 'DEMO' },
         createdAt: { gte: startDate, lte: endDate },
       },
       select: { id: true, qualified: true },
@@ -258,6 +256,7 @@ export class KPIService {
     const sales = await prisma.sale.findMany({
       where: {
         companyId,
+        dataOrigin: { not: 'DEMO' },
         createdAt: { gte: startDate, lte: endDate },
         paymentStatus: 'completed',
       },
@@ -279,6 +278,7 @@ export class KPIService {
     const sales = await prisma.sale.findMany({
       where: {
         companyId,
+        dataOrigin: { not: 'DEMO' },
         createdAt: { gte: startDate, lte: endDate },
         paymentStatus: 'completed',
       },
@@ -288,9 +288,10 @@ export class KPIService {
     const spend = await prisma.metricSnapshot.aggregate({
       where: {
         campaign: { companyId },
+        dataOrigin: { not: 'DEMO' },
         date: { gte: startDate, lte: endDate },
       },
-      _sum: { spend: true },
+      _sum: { spend: true, impressions: true, clicks: true },
     });
 
     const totalRevenue = sales.reduce((sum, s) => sum + Number(s.amount || 0), 0);
@@ -301,23 +302,25 @@ export class KPIService {
       revenue: totalRevenue,
       profit: totalProfit,
       spend: totalSpend,
+      impressions: Number(spend._sum.impressions || 0),
+      clicks: Number(spend._sum.clicks || 0),
     };
   }
 
   private computeMetrics(funnel: any, financials: any): KPIMetrics {
-    const { revenue, profit, spend } = financials;
+    const { revenue, profit, spend, impressions, clicks } = financials;
     const { leads, sales } = funnel;
 
     return {
-      impressions: 0, // seria agregado de MetricSnapshot
-      clicks: 0,
+      impressions,
+      clicks,
       leads,
       qualified: funnel.qualified,
       deals: 0,
       sales,
       customers: 0,
-      clickThroughRate: 0,
-      costPerClick: 0,
+      clickThroughRate: impressions > 0 ? clicks / impressions : 0,
+      costPerClick: clicks > 0 ? spend / clicks : 0,
       costPerLead: leads > 0 ? spend / leads : 0,
       conversionRate: leads > 0 ? sales / leads : 0,
       customerAcquisitionCost: sales > 0 ? spend / sales : 0,

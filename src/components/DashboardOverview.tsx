@@ -62,73 +62,20 @@ function relativeTime(iso: string): string {
   return `${Math.floor(h / 24)} d`;
 }
 
-/* ------------------------------- demo data -------------------------------- */
-
-const demoSeries = [
-  { date: "18/06", receita: 82000, investimento: 21000 },
-  { date: "22/06", receita: 96000, investimento: 24500 },
-  { date: "26/06", receita: 88000, investimento: 23000 },
-  { date: "30/06", receita: 112000, investimento: 27500 },
-  { date: "04/07", receita: 104000, investimento: 26000 },
-  { date: "08/07", receita: 132000, investimento: 30500 },
-  { date: "12/07", receita: 158000, investimento: 33000 },
-  { date: "16/07", receita: 189000, investimento: 36500 },
-];
-
-const demoChannels = [
-  { name: "Meta Ads", value: 42, color: "#3B82F6" },
-  { name: "Google Ads", value: 24, color: "#22C55E" },
-  { name: "TikTok Ads", value: 16, color: "#EC4899" },
-  { name: "Shopee Ads", value: 9, color: "#F97316" },
-  { name: "Outros", value: 9, color: "#64748B" },
-];
-
-const demoCompanies = [
-  { name: "Caminhos do Sul Gramado", segment: "Turismo", revenue: "R$ 87.300,00", delta: 28.4 },
-  { name: "Colchões Brasil", segment: "Colchões", revenue: "R$ 56.780,00", delta: 19.7 },
-  { name: "Sacolas & Cia", segment: "Sacolas Personalizadas", revenue: "R$ 24.960,00", delta: 13.2 },
-  { name: "Clínica Viva Bem", segment: "Clínica", revenue: "R$ 11.500,00", delta: -3.2 },
-  { name: "Imobille Imóveis", segment: "Imobiliária", revenue: "R$ 6.000,00", delta: 8.1 },
-];
-
-const demoCampaigns = [
-  { name: "Transfer POA - Gramado", channel: "Meta", channelColor: "#3B82F6", invest: "R$ 4.850,00", leads: 128, sales: 48, revenue: "R$ 38.400,00", roas: "7,92", cpa: "R$ 37,89" },
-  { name: "City Tour Gramado", channel: "Google", channelColor: "#22C55E", invest: "R$ 3.240,00", leads: 86, sales: 26, revenue: "R$ 21.840,00", roas: "6,74", cpa: "R$ 37,67" },
-  { name: "Snowland - TikTok", channel: "TikTok", channelColor: "#EC4899", invest: "R$ 2.680,00", leads: 112, sales: 15, revenue: "R$ 12.750,00", roas: "4,76", cpa: "R$ 23,92" },
-  { name: "Sacolas Kraft - Shopee", channel: "Shopee", channelColor: "#F97316", invest: "R$ 1.950,00", leads: 64, sales: 22, revenue: "R$ 17.160,00", roas: "8,80", cpa: "R$ 30,47" },
-  { name: "Colchão Queen - Meta", channel: "Meta", channelColor: "#3B82F6", invest: "R$ 2.150,00", leads: 74, sales: 18, revenue: "R$ 15.320,00", roas: "7,13", cpa: "R$ 29,05" },
-];
-
-const demoFunnel = [
-  { label: "Leads", value: 654 },
-  { label: "Orçamentos", value: 412 },
-  { label: "Negociação", value: 287 },
-  { label: "Vendas", value: 213 },
-  { label: "Pós Venda", value: 74 },
-];
-
-const demoActivities = [
-  { type: "conversation", title: "Nova conversa iniciada", detail: "Caminhos do Sul Gramado", time: "Agora" },
-  { type: "sale", title: "Venda concluída", detail: "Colchões Brasil", time: "5 min" },
-  { type: "order", title: "Novo pedido na Shopee", detail: "Sacolas & Cia", time: "15 min" },
-  { type: "report", title: "Relatório gerado", detail: "Relatório Semanal", time: "30 min" },
-  { type: "insight", title: "Insight gerado pela IA", detail: "Caminhos do Sul Gramado", time: "1 h" },
-];
-
-const demoKpis = {
-  investment: { value: 24850, delta: 18.6 },
-  revenue: { value: 18540, delta: 32.4 },
-  roas: { value: 7.51, delta: 22.1 },
-  leads: { value: 654, delta: 15.7 },
-  sales: { value: 213, delta: 19.4 },
-  conversionRate: { value: 32.6, delta: 6.3 },
+const EMPTY_KPIS = {
+  investment: { value: 0, delta: 0 },
+  revenue: { value: 0, delta: 0 },
+  roas: { value: 0, delta: 0 },
+  leads: { value: 0, delta: 0 },
+  sales: { value: 0, delta: 0 },
+  conversionRate: { value: 0, delta: 0 },
 };
 
-const demoMetrics = {
-  cpc: { value: 1.32, delta: -6.4 },
-  ctr: { value: 2.38, delta: 8.1 },
-  cpm: { value: 18.75, delta: -4.2 },
-  ticket: { value: 874.32, delta: 14.3 },
+const EMPTY_METRICS = {
+  cpc: { value: 0, delta: 0 },
+  ctr: { value: 0, delta: 0 },
+  cpm: { value: 0, delta: 0 },
+  ticket: { value: 0, delta: 0 },
 };
 
 const ACTIVITY_ICONS: Record<string, { icon: typeof MessageCircle; color: string; bg: string }> = {
@@ -219,8 +166,14 @@ const tooltipStyle = {
 
 interface OverviewData {
   hasData: boolean;
-  kpis: typeof demoKpis;
-  metrics: typeof demoMetrics;
+  dataQuality: {
+    revenueSource: string;
+    mediaConversionValue: number;
+    roasAvailable: boolean;
+    rules: string[];
+  };
+  kpis: typeof EMPTY_KPIS;
+  metrics: typeof EMPTY_METRICS;
   series: Array<{ date: string; receita: number; investimento: number }>;
   channels: Array<{ name: string; channel: string; value: number }>;
   campaigns: Array<{
@@ -230,8 +183,8 @@ interface OverviewData {
     leads: number;
     sales: number;
     revenue: number;
-    roas: number;
-    cpa: number;
+    roas: number | null;
+    cpa: number | null;
   }>;
   companies: Array<{ name: string; segment: string; revenue: number; delta: number }>;
   funnel: Array<{ label: string; value: number }>;
@@ -280,16 +233,23 @@ function StatCard({
 export function DashboardOverview() {
   const [data, setData] = useState<OverviewData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
 
     fetch("/api/dashboard/overview?days=30")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (!cancelled && json?.ok && json.hasData) setData(json);
+      .then(async (res) => {
+        const json = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(json?.error || "Dados indisponíveis");
+        return json;
       })
-      .catch(() => {})
+      .then((json) => {
+        if (!cancelled && json?.ok) setData(json);
+      })
+      .catch((requestError) => {
+        if (!cancelled) setError(requestError instanceof Error ? requestError.message : "Dados indisponíveis");
+      })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
@@ -301,34 +261,34 @@ export function DashboardOverview() {
 
   const live = data !== null;
   const safeData = data ?? null;
-  const kpiValues = safeData?.kpis ?? demoKpis;
-  const metricValues = safeData?.metrics ?? demoMetrics;
-  const series = (safeData?.series?.length ?? 0) > 1 && safeData?.series ? safeData.series : demoSeries;
+  const kpiValues = safeData?.kpis ?? EMPTY_KPIS;
+  const metricValues = safeData?.metrics ?? EMPTY_METRICS;
+  const series = safeData?.series ?? [];
 
   const channels = useMemo(() => {
     const source = safeData?.channels ?? [];
-    if (!live || source.length === 0) return demoChannels;
+    if (source.length === 0) return [];
     return source.map((c) => ({
       name: c.name,
       value: c.value,
       color: CHANNEL_COLORS[c.channel] || "#64748B",
     }));
-  }, [live, safeData]);
+  }, [safeData]);
 
   const companies = useMemo(() => {
     const source = safeData?.companies ?? [];
-    if (!live || source.length === 0) return demoCompanies;
+    if (source.length === 0) return [];
     return source.map((c) => ({
       name: c.name,
       segment: c.segment,
       revenue: brl(c.revenue),
       delta: c.delta,
     }));
-  }, [live, safeData]);
+  }, [safeData]);
 
   const campaigns = useMemo(() => {
     const source = safeData?.campaigns ?? [];
-    if (!live || source.length === 0) return demoCampaigns;
+    if (source.length === 0) return [];
     return source.map((c) => ({
       name: c.name,
       channel: c.channel.charAt(0) + c.channel.slice(1).toLowerCase(),
@@ -337,26 +297,26 @@ export function DashboardOverview() {
       leads: c.leads,
       sales: c.sales,
       revenue: brl(c.revenue),
-      roas: num(c.roas, 2),
-      cpa: brl(c.cpa),
+      roas: c.roas === null ? "—" : num(c.roas, 2),
+      cpa: c.cpa === null ? "—" : brl(c.cpa),
     }));
-  }, [live, safeData]);
+  }, [safeData]);
 
   const funnelSource = safeData?.funnel ?? [];
-  const funnel = live && funnelSource.some((f) => f.value > 0) ? funnelSource : demoFunnel;
+  const funnel = funnelSource;
   const funnelMax = Math.max(...funnel.map((f) => f.value), 1);
   const funnelColors = ["#2563eb", "#22c55e", "#eab308", "#f97316", "#ef4444"];
 
   const activities = useMemo(() => {
     const source = safeData?.activities ?? [];
-    if (!live || source.length === 0) return demoActivities;
+    if (source.length === 0) return [];
     return source.map((a) => ({
       type: a.type,
       title: a.title,
       detail: a.detail,
       time: relativeTime(a.at),
     }));
-  }, [live, safeData]);
+  }, [safeData]);
 
   const receitaSpark = series.map((s) => s.receita);
   const investSpark = series.map((s) => s.investimento);
@@ -365,7 +325,7 @@ export function DashboardOverview() {
   const kpis = [
     { label: "Investimento", value: brl(kpiValues.investment.value), delta: kpiValues.investment.delta, icon: DollarSign, color: "#eab308", spark: investSpark },
     { label: "Receita", value: brl(kpiValues.revenue.value), delta: kpiValues.revenue.delta, icon: Wallet, color: "#22c55e", spark: receitaSpark },
-    { label: "ROAS", value: num(kpiValues.roas.value, 2), delta: kpiValues.roas.delta, icon: Share2, color: "#a855f7", spark: roasSpark },
+    { label: "ROAS", value: safeData?.dataQuality.roasAvailable ? num(kpiValues.roas.value, 2) : "—", delta: kpiValues.roas.delta, icon: Share2, color: "#a855f7", spark: roasSpark },
     { label: "Leads", value: String(kpiValues.leads.value), delta: kpiValues.leads.delta, icon: Users, color: "#3b82f6", spark: receitaSpark },
     { label: "Vendas", value: String(kpiValues.sales.value), delta: kpiValues.sales.delta, icon: ShoppingCart, color: "#22c55e", spark: receitaSpark },
     { label: "Taxa de Conversão", value: `${num(kpiValues.conversionRate.value)}%`, delta: kpiValues.conversionRate.delta, icon: Target, color: "#a855f7", spark: roasSpark },
@@ -375,17 +335,22 @@ export function DashboardOverview() {
     { label: "CPC Médio", value: brl(metricValues.cpc.value), delta: metricValues.cpc.delta, icon: MousePointerClick, color: "#3b82f6", spark: investSpark },
     { label: "CTR Médio", value: `${num(metricValues.ctr.value, 2)}%`, delta: metricValues.ctr.delta, icon: Percent, color: "#22c55e", spark: receitaSpark },
     { label: "CPM Médio", value: brl(metricValues.cpm.value), delta: metricValues.cpm.delta, icon: MonitorPlay, color: "#eab308", spark: investSpark },
-    { label: "Tempo Médio de Resposta", value: live ? "—" : "2m 18s", delta: live ? 0 : -12.6, icon: Clock3, color: "#ec4899", spark: roasSpark },
+    { label: "Tempo Médio de Resposta", value: "—", delta: 0, icon: Clock3, color: "#ec4899", spark: roasSpark },
     { label: "Ticket Médio", value: brl(metricValues.ticket.value), delta: metricValues.ticket.delta, icon: Receipt, color: "#f97316", spark: receitaSpark },
-    { label: "LTV Médio", value: live ? "—" : "R$ 2.134,50", delta: live ? 0 : 17.8, icon: Gem, color: "#a855f7", spark: receitaSpark },
+    { label: "LTV Médio", value: "—", delta: 0, icon: Gem, color: "#a855f7", spark: receitaSpark },
   ];
 
   return (
     <div className="space-y-6">
-      {!loading && !live && (
+      {!loading && error && (
         <div className="flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3 text-xs text-amber-300">
           <Sparkles className="h-3.5 w-3.5" />
-          Exibindo dados de demonstração. Conecte suas contas e registre vendas para liberar métricas reais.
+          {error} Nenhum dado demonstrativo foi exibido.
+        </div>
+      )}
+      {!loading && live && !data?.hasData && (
+        <div className="flex items-center gap-2 rounded-xl border border-blue-500/20 bg-blue-500/[0.06] px-4 py-3 text-xs text-blue-300">
+          Nenhum dado real registrado neste período. Os indicadores permanecem zerados.
         </div>
       )}
 

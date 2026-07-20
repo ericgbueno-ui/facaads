@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { AdChannel } from "@prisma/client";
+import { getMetaAccessToken } from "@/lib/meta-ads/config";
 
 export const dynamic = "force-dynamic";
 
@@ -119,7 +120,7 @@ async function getToken(): Promise<string | null> {
     });
     if (acc?.accessToken) return acc.accessToken;
   } catch {}
-  return process.env.META_ADS_ACCESS_TOKEN || process.env.META_SYSTEM_USER_TOKEN || null;
+  return getMetaAccessToken();
 }
 
 async function applySales(accounts: any[], sales: Record<string, { sales: number; revenue: number }>) {

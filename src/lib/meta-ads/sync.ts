@@ -109,8 +109,8 @@ export async function syncMetaAdAccount(
 
     await prisma.metricSnapshot.upsert({
       where: { campaignId_date: { campaignId, date } },
-      update: { spend, impressions, clicks, conversions, conversionValue },
-      create: { campaignId, date, spend, impressions, clicks, conversions, conversionValue },
+      update: { spend, impressions, clicks, conversions, conversionValue, dataOrigin: "LIVE", sourceSystem: "META", sourceExternalId: `${row.campaign_id}:${row.date_start}`, sourcedAt: new Date() },
+      create: { campaignId, date, spend, impressions, clicks, conversions, conversionValue, dataOrigin: "LIVE", sourceSystem: "META", sourceExternalId: `${row.campaign_id}:${row.date_start}` },
     });
     snapshots++;
   }

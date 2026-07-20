@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
 interface GoogleAdsTokenPayload {
+  companyId: string;
   refreshToken: string;
   customerId: string; // Customer ID (ex: 1234567890)
   accountName: string;
@@ -17,6 +18,7 @@ export async function storeGoogleAdsToken(payload: GoogleAdsTokenPayload) {
     update: {
       name: payload.accountName,
       refreshToken: payload.refreshToken,
+      companyId: payload.companyId,
       lastSyncedAt: new Date(),
     },
     create: {
@@ -24,6 +26,7 @@ export async function storeGoogleAdsToken(payload: GoogleAdsTokenPayload) {
       externalAccountId: payload.customerId,
       name: payload.accountName,
       refreshToken: payload.refreshToken,
+      companyId: payload.companyId,
       lastSyncedAt: new Date(),
     },
   });
@@ -42,10 +45,11 @@ export async function getGoogleAdsRefreshToken(customerId: string) {
   return account?.refreshToken || null;
 }
 
-export async function getUserGoogleAdsAccounts() {
+export async function getUserGoogleAdsAccounts(companyIds: string[]) {
   return prisma.adAccount.findMany({
     where: {
       channel: "GOOGLE",
+      companyId: { in: companyIds },
     },
   });
 }

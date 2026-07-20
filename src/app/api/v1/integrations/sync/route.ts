@@ -1,54 +1,16 @@
-/**
- * POST /api/v1/integrations/sync
- * Sincronizar dados de um provider
- */
-
-import { NextRequest, NextResponse } from 'next/server';
-import { getIntegrationCore } from '@/core/integrations/core/integration-core';
-import { getQueueManager, QueueType } from '@/core/integrations/queue/queue-manager';
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { validateCompanyAccess } from "@/lib/auth-middleware";
 
 export async function POST(request: NextRequest) {
-  try {
-    const { connectionId, companyId } = await request.json();
-
-    if (!connectionId || !companyId) {
-      return NextResponse.json(
-        { error: 'connectionId e companyId são obrigatórios' },
-        { status: 400 }
-      );
-    }
-
-    // Enfileirar sync job
-    const queueManager = getQueueManager();
-
-    // Buscar provider da conexão para obter o tipo
-    const core = getIntegrationCore();
-    const connection = await core.getConnection(connectionId);
-
-    if (!connection) {
-      return NextResponse.json(
-        { error: 'Conexão não encontrada' },
-        { status: 404 }
-      );
-    }
-
-    const job = await queueManager.enqueue({
-      type: QueueType.SYNC,
-      provider: connection.provider,
-      connectionId,
-      companyId,
-      priority: 5,
-    });
-
-    return NextResponse.json({
-      success: true,
-      jobId: job.id,
-      message: 'Sincronização enfileirada',
-    });
-  } catch (error) {
-    return NextResponse.json(
-      { error: (error as Error).message },
-      { status: 500 }
-    );
-  }
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const { companyId } = await request.json();
+  if (!companyId) return NextResponse.json({ error: "companyId é obrigatório" }, { status: 400 });
+  const access = await validateCompanyAccess(session.user.id, companyId);
+  if (!access.valid) return NextResponse.json({ error: access.error }, { status: 403 });
+  return NextResponse.json(
+    { success: false, code: "USE_CANONICAL_SYNC", error: "Use POST /api/sync/all-channels para sincronização real e auditável." },
+    { status: 410 }
+  );
 }

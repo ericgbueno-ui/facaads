@@ -45,7 +45,7 @@ export async function sendMetaPurchaseEvent(
     });
 
     if (campaign?.adAccount) {
-      // TODO: Buscar tokens do AdAccount (por enquanto usar mock)
+      // Credenciais de CAPI ainda não fazem parte do modelo AdAccount.
       // accessToken = campaign.adAccount.metaAccessToken;
       // pixelId = campaign.adAccount.metaPixelId;
     }
@@ -53,11 +53,7 @@ export async function sendMetaPurchaseEvent(
 
   // Se não temos credentials, apenas simular
   if (!accessToken || !pixelId) {
-    const externalEventId = `capi_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-    console.log(
-      `[Meta CAPI] Evento simulado (sem credentials): ${data.value} BRL`
-    );
-    return { externalEventId };
+    throw new Error("META_CAPI_NOT_CONFIGURED");
   }
 
   // Construir payload CAPI

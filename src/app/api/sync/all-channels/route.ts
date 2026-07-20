@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { fetchMetaCampaignInsights } from "@/lib/ads/meta";
+import { syncGoogleAdsAccount } from "@/lib/google-ads/sync";
+import { syncTikTokAdAccount } from "@/lib/tiktok-ads/sync";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -89,6 +91,9 @@ export async function POST(req: NextRequest) {
               conversions: metric.conversions,
               conversionValue: metric.conversionValue,
               raw: metric.raw,
+              dataOrigin: "LIVE",
+              sourceSystem: "META",
+              sourcedAt: new Date(),
             },
             create: {
               campaignId: campaign.id,
@@ -99,6 +104,9 @@ export async function POST(req: NextRequest) {
               conversions: metric.conversions,
               conversionValue: metric.conversionValue,
               raw: metric.raw,
+              dataOrigin: "LIVE",
+              sourceSystem: "META",
+              sourceExternalId: `${metric.externalCampaignId}:${metric.date}`,
             },
           });
 
@@ -124,10 +132,20 @@ export async function POST(req: NextRequest) {
       });
 
       if (googleAccount) {
-        // TODO: Implementar sincronização com Google Ads API
-        // Por enquanto, gerar dados de demonstração
-        results.google.synced = 0;
-        results.google.error = "Google Ads API não configurada - requer credenciais OAuth";
+        if (!googleAccount.refreshToken) {
+          results.google.error = "Google Ads não configurado: refresh token ausente";
+        } else if (!process.env.GOOGLE_ADS_CLIENT_ID || !process.env.GOOGLE_ADS_CLIENT_SECRET || !process.env.GOOGLE_ADS_DEVELOPER_TOKEN) {
+          results.google.error = "Google Ads não configurado: credenciais OAuth/developer token ausentes";
+        } else {
+          const summary = await syncGoogleAdsAccount({
+            id: googleAccount.id,
+            externalAccountId: googleAccount.externalAccountId,
+            refreshToken: googleAccount.refreshToken,
+            companyId: googleAccount.companyId,
+            loginCustomerId: googleAccount.loginCustomerId,
+          }, days);
+          results.google.synced = summary.snapshots;
+        }
       }
     } catch (err: any) {
       results.google.error = err.message;
@@ -140,9 +158,17 @@ export async function POST(req: NextRequest) {
       });
 
       if (tiktokAccount) {
-        // TODO: Implementar sincronização com TikTok Ads API
-        results.tiktok.synced = 0;
-        results.tiktok.error = "TikTok Ads API não configurada - requer credenciais de desenvolvedor";
+        if (!tiktokAccount.accessToken) {
+          results.tiktok.error = "TikTok Ads não configurado: access token ausente";
+        } else {
+          const summary = await syncTikTokAdAccount({
+            id: tiktokAccount.id,
+            externalAccountId: tiktokAccount.externalAccountId,
+            accessToken: tiktokAccount.accessToken,
+            companyId: tiktokAccount.companyId,
+          }, days);
+          results.tiktok.synced = summary.snapshots;
+        }
       }
     } catch (err: any) {
       results.tiktok.error = err.message;
@@ -155,9 +181,7 @@ export async function POST(req: NextRequest) {
       });
 
       if (shopeeAccount) {
-        // TODO: Implementar sincronização com Shopee API
-        results.shopee.synced = 0;
-        results.shopee.error = "Shopee API não configurada - requer credenciais de shop";
+        results.shopee.error = "Shopee Ads: somente importação CSV auditável está disponível";
       }
     } catch (err: any) {
       results.shopee.error = err.message;
@@ -165,12 +189,16 @@ export async function POST(req: NextRequest) {
 
     const totalSynced = Object.values(results).reduce((acc, r) => acc + r.synced, 0);
 
+    const hasErrors = Object.values(results).some((result) => result.error !== null);
     return NextResponse.json({
-      ok: true,
-      message: `Sincronização concluída: ${totalSynced} registros atualizados`,
+      ok: totalSynced > 0 && !hasErrors,
+      status: totalSynced === 0 ? "not_configured" : hasErrors ? "partial" : "completed",
+      message: totalSynced === 0
+        ? "Nenhum canal configurado foi sincronizado"
+        : `Sincronização processada: ${totalSynced} registros atualizados`,
       results,
       timestamp: new Date().toISOString(),
-    });
+    }, { status: totalSynced === 0 ? 503 : hasErrors ? 207 : 200 });
   } catch (error: any) {
     console.error("Sync error:", error);
     return NextResponse.json(

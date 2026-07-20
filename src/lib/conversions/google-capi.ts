@@ -19,16 +19,9 @@ interface GoogleConversionResponse {
  * TODO: Implementar com Google Ads API client autenticado
  */
 export async function sendGoogleConversion(
-  data: GoogleConversionData
+  _data: GoogleConversionData
 ): Promise<GoogleConversionResponse> {
   // Por enquanto apenas simular
-  const externalEventId = `gads_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  throw new Error("GOOGLE_ADS_CONVERSIONS_NOT_CONFIGURED");
 
-  console.log(
-    `[Google Ads] Conversão simulada: ${data.value} BRL em ${data.eventTime.toISOString()}`
-  );
-
-  return {
-    externalEventId,
-  };
 }

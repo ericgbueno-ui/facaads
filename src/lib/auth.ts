@@ -24,14 +24,6 @@ function initAuth() {
           const password = credentials?.password as string | undefined;
           if (!email || !password) return null;
 
-          if (email === "ericgbueno@gmail.com" && password === "portaaberta") {
-            return {
-              id: "test-user-1",
-              email: "ericgbueno@gmail.com",
-              name: "Eric Bueno",
-            };
-          }
-
           if (!process.env.DATABASE_URL) {
             return null;
           }

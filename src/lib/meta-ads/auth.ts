@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
 interface MetaAccessTokenPayload {
+  companyId: string;
   accessToken: string;
   businessAccountId: string; // Ad Account ID
   accountName: string;
@@ -17,6 +18,7 @@ export async function storeMetaAccessToken(payload: MetaAccessTokenPayload) {
     update: {
       name: payload.accountName,
       accessToken: payload.accessToken,
+      companyId: payload.companyId,
       lastSyncedAt: new Date(),
     },
     create: {
@@ -24,6 +26,7 @@ export async function storeMetaAccessToken(payload: MetaAccessTokenPayload) {
       externalAccountId: payload.businessAccountId,
       name: payload.accountName,
       accessToken: payload.accessToken,
+      companyId: payload.companyId,
       lastSyncedAt: new Date(),
     },
   });
@@ -42,10 +45,11 @@ export async function getMetaAccessToken(accountId: string) {
   return account?.accessToken || null;
 }
 
-export async function getUserMetaAccounts() {
+export async function getUserMetaAccounts(companyIds: string[]) {
   return prisma.adAccount.findMany({
     where: {
       channel: "META",
+      companyId: { in: companyIds },
     },
   });
 }

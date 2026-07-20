@@ -1,3 +1,7 @@
+# ⚠️ DOCUMENTO HISTÓRICO — NÃO USE PARA VALIDAR DADOS OU INTEGRAÇÕES
+
+> Este guia contém declarações antigas sobre dados reais e integrações. Consulte `ETAPA_1_DADOS_CONFIAVEIS.md` antes de operar o sistema.
+
 # 🚀 Quick Start - FacaAds com Dados Reais
 
 Comece em 3 minutos com dados reais de todos os canais de publicidade.

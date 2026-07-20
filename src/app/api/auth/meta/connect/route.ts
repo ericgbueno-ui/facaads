@@ -3,11 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { storeMetaAccessToken } from "@/lib/meta-ads/auth";
 import { z } from "zod";
+import { validateCompanyAccess } from "@/lib/auth-middleware";
 
 const ConnectMetaSchema = z.object({
   accessToken: z.string().min(1, "Access token required"),
   businessAccountId: z.string().min(1, "Business Account ID required"),
   accountName: z.string().min(1, "Account name required"),
+  companyId: z.string().min(1, "Company ID required"),
 });
 
 export async function POST(req: NextRequest) {
@@ -19,7 +21,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { accessToken, businessAccountId, accountName } = ConnectMetaSchema.parse(body);
+    const { accessToken, businessAccountId, accountName, companyId } = ConnectMetaSchema.parse(body);
+    const access = await validateCompanyAccess(session.user.id!, companyId);
+    if (!access.valid) return NextResponse.json({ error: access.error }, { status: 403 });
 
     // Verify token is valid by making a test API call
     const verifyResponse = await fetch(
@@ -38,6 +42,7 @@ export async function POST(req: NextRequest) {
       accessToken,
       businessAccountId,
       accountName,
+      companyId,
     });
 
     return NextResponse.json({

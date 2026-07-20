@@ -44,7 +44,7 @@ export async function GET(
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
-    const companyId = params.companyId;
+    const { companyId } = await params;
 
     // Validar acesso
     const validation = await validateCompanyAccess(session.user.id, companyId);
@@ -62,7 +62,7 @@ export async function GET(
     const skip = (page - 1) * limit;
 
     // Construir filtros
-    const where: any = { companyId };
+    const where: any = { companyId, dataOrigin: { not: "DEMO" } };
     if (source) where.source = source;
     if (campaign) where.campaign = campaign;
     if (stageId) where.stageId = stageId;
@@ -118,7 +118,7 @@ export async function POST(
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
-    const companyId = params.companyId;
+    const { companyId } = await params;
 
     // Validar acesso
     const validation = await validateCompanyAccess(session.user.id, companyId);
@@ -171,6 +171,9 @@ export async function POST(
       data: {
         ...validated,
         companyId,
+        dataOrigin: "MANUAL",
+        sourceSystem: "HERGE",
+        actorUserId: session.user.id,
         pipelineId,
         stageId,
       },

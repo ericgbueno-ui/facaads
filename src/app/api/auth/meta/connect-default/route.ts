@@ -3,10 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { storeMetaAccessToken } from "@/lib/meta-ads/auth";
 import { z } from "zod";
+import { validateCompanyAccess } from "@/lib/auth-middleware";
 
 const ConnectDefaultSchema = z.object({
   accountId: z.string().min(1, "Account ID required"),
   accountName: z.string().min(1, "Account name required"),
+  companyId: z.string().min(1, "Company ID required"),
 });
 
 export async function POST(req: NextRequest) {
@@ -26,12 +28,15 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { accountId, accountName } = ConnectDefaultSchema.parse(body);
+    const { accountId, accountName, companyId } = ConnectDefaultSchema.parse(body);
+    const access = await validateCompanyAccess(session.user.id!, companyId);
+    if (!access.valid) return NextResponse.json({ error: access.error }, { status: 403 });
 
     const account = await storeMetaAccessToken({
       accessToken,
       businessAccountId: accountId,
       accountName,
+      companyId,
     });
 
     return NextResponse.json({

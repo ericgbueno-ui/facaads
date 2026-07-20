@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { validateWebhookToken } from "@/lib/whatsapp/auth";
+import crypto from "node:crypto";
 
 export const dynamic = "force-dynamic";
 
-const WEBHOOK_VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_TOKEN || "seu_token_aqui";
+const WEBHOOK_VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_TOKEN;
 
 /**
  * GET /api/webhooks/whatsapp
@@ -18,6 +19,9 @@ export async function GET(req: NextRequest) {
     const challenge = searchParams.get("hub.challenge");
 
     // Verificação do webhook
+    if (!WEBHOOK_VERIFY_TOKEN) {
+      return NextResponse.json({ error: "Webhook WhatsApp não configurado" }, { status: 503 });
+    }
     if (mode === "subscribe" && token) {
       if (validateWebhookToken(token, WEBHOOK_VERIFY_TOKEN)) {
         return new NextResponse(challenge, { status: 200 });
@@ -81,7 +85,18 @@ interface WhatsAppWebhookPayload {
  */
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as WhatsAppWebhookPayload;
+    const rawBody = await req.text();
+    const appSecret = process.env.WHATSAPP_APP_SECRET;
+    const signature = req.headers.get("x-hub-signature-256");
+    if (!appSecret || !signature) {
+      return NextResponse.json({ error: "Assinatura do webhook ausente" }, { status: 401 });
+    }
+    const expected = `sha256=${crypto.createHmac("sha256", appSecret).update(rawBody).digest("hex")}`;
+    const validSignature = signature.length === expected.length && crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+    if (!validSignature) {
+      return NextResponse.json({ error: "Assinatura inválida" }, { status: 401 });
+    }
+    const body = JSON.parse(rawBody) as WhatsAppWebhookPayload;
 
     // Validar estrutura
     if (body.object !== "whatsapp_business_account") {
@@ -112,8 +127,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
     console.error("Erro ao processar webhook WhatsApp:", error);
-    // Retornar 200 mesmo em erro para não retentar
-    return NextResponse.json({ success: true }, { status: 200 });
+    return NextResponse.json({ success: false }, { status: 500 });
   }
 }
 
@@ -197,6 +211,8 @@ async function processMessages(
                   name: `Cliente ${phoneNumber.slice(-4)}`,
                   whatsapp: phoneNumber,
                   source: "whatsapp",
+                  dataOrigin: "LIVE",
+                  sourceSystem: "WHATSAPP",
                   pipelineId: pipeline.id,
                   stageId: firstStage.id,
                 },
@@ -217,6 +233,8 @@ async function processMessages(
           externalId: message.id,
           type: message.type,
           createdAt: new Date(parseInt(message.timestamp) * 1000),
+          dataOrigin: "LIVE",
+          sourceSystem: "WHATSAPP",
         },
       });
 

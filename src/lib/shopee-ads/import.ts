@@ -83,6 +83,9 @@ export async function importShopeeCSV(
             clicks: parseInt(row.clicks || "0"),
             conversions: parseInt(row.conversions || "0"),
             conversionValue: parseFloat(row.conversion_value || "0"),
+            dataOrigin: "IMPORTED",
+            sourceSystem: "SHOPEE_CSV",
+            sourcedAt: new Date(),
           },
           create: {
             campaignId: campaign.id,
@@ -92,6 +95,9 @@ export async function importShopeeCSV(
             clicks: parseInt(row.clicks || "0"),
             conversions: parseInt(row.conversions || "0"),
             conversionValue: parseFloat(row.conversion_value || "0"),
+            dataOrigin: "IMPORTED",
+            sourceSystem: "SHOPEE_CSV",
+            sourceExternalId: `${row.campaign_id}:${today.toISOString().slice(0, 10)}`,
           },
         });
 

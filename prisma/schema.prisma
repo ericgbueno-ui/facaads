@@ -29,6 +29,13 @@ enum AlertSeverity {
   CRITICAL
 }
 
+enum DataOrigin {
+  LIVE
+  MANUAL
+  IMPORTED
+  DEMO
+}
+
 // --- Empresas (Multi-tenancy) ---
 
 model Company {
@@ -66,16 +73,16 @@ model Company {
   aiAnalyses            AIAnalysis[]
 
   // MASTER 06: Revenue Engine
-  revenueSales          RevenueSale[]
-  revenueSources        RevenueSource[]
-  revenueProducts       RevenueProduct[]
-  revenueIndicators     RevenueIndicator[]
-  revenueLossReasons    RevenueLossReason[]
-  revenueTimelines      RevenueTimeline[]
-  revenueGoals          RevenueGoal[]
-  revenueForecasts      RevenueForecast[]
-  revenueCommissions    RevenueCommission[]
-  revenueScores         RevenueScore[]
+  revenueSales       RevenueSale[]
+  revenueSources     RevenueSource[]
+  revenueProducts    RevenueProduct[]
+  revenueIndicators  RevenueIndicator[]
+  revenueLossReasons RevenueLossReason[]
+  revenueTimelines   RevenueTimeline[]
+  revenueGoals       RevenueGoal[]
+  revenueForecasts   RevenueForecast[]
+  revenueCommissions RevenueCommission[]
+  revenueScores      RevenueScore[]
 
   // MASTER 06: Communication Hub
   attendanceStatuses    AttendanceStatus[]
@@ -100,24 +107,24 @@ model Company {
 // --- Auth (NextAuth) ---
 
 model User {
-  id               String        @id @default(cuid())
-  name             String?
-  email            String        @unique
-  emailVerified    DateTime?
-  image            String?
-  passwordHash     String?
-  defaultCompanyId String?
-  accounts         Account[]
-  sessions         Session[]
-  companyUsers     CompanyUser[]
-  auditLogs        AuditLog[]
-  assignedAttendances   Attendance[] @relation("AttendanceAttendant")
-  createdAttendances    Attendance[] @relation("AttendanceCreator")
+  id                       String              @id @default(cuid())
+  name                     String?
+  email                    String              @unique
+  emailVerified            DateTime?
+  image                    String?
+  passwordHash             String?
+  defaultCompanyId         String?
+  accounts                 Account[]
+  sessions                 Session[]
+  companyUsers             CompanyUser[]
+  auditLogs                AuditLog[]
+  assignedAttendances      Attendance[]        @relation("AttendanceAttendant")
+  createdAttendances       Attendance[]        @relation("AttendanceCreator")
   attendanceHistoryEntries AttendanceHistory[]
-  remindersAssigned     Reminder[]            @relation("ReminderAssignee")
-  followUpsAssigned     FollowUp[]            @relation("FollowUpAssignee")
-  notificationsReceived Notification[]        @relation("NotificationRecipient")
-  createdAt        DateTime      @default(now())
+  remindersAssigned        Reminder[]          @relation("ReminderAssignee")
+  followUpsAssigned        FollowUp[]          @relation("FollowUpAssignee")
+  notificationsReceived    Notification[]      @relation("NotificationRecipient")
+  createdAt                DateTime            @default(now())
 }
 
 model Account {
@@ -222,33 +229,40 @@ model Campaign {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  snapshots       MetricSnapshot[]
-  conversions     ConversionEvent[] @relation("ConversionsToCampaign")
-  alerts          Alert[]
-  company         Company?          @relation(fields: [companyId], references: [id], onDelete: SetNull)
-  leads           Lead[]
-  sales           Sale[]
-  revenueSales    RevenueSale[]     @relation("RevenueSalesToCampaign")
-  attendances     Attendance[]
+  snapshots    MetricSnapshot[]
+  conversions  ConversionEvent[] @relation("ConversionsToCampaign")
+  alerts       Alert[]
+  company      Company?          @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  leads        Lead[]
+  sales        Sale[]
+  revenueSales RevenueSale[]     @relation("RevenueSalesToCampaign")
+  attendances  Attendance[]
 
   @@unique([adAccountId, externalCampaignId])
   @@index([companyId])
 }
 
 model MetricSnapshot {
-  id              String   @id @default(cuid())
-  campaignId      String
-  campaign        Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  date            DateTime @db.Date
-  spend           Decimal  @db.Decimal(12, 2)
-  impressions     Int      @default(0)
-  clicks          Int      @default(0)
-  conversions     Int      @default(0)
-  conversionValue Decimal? @db.Decimal(12, 2)
-  raw             Json? // payload bruto da API pra auditoria/debug
-  createdAt       DateTime @default(now())
+  id               String     @id @default(cuid())
+  campaignId       String
+  campaign         Campaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  date             DateTime   @db.Date
+  spend            Decimal    @db.Decimal(12, 2)
+  impressions      Int        @default(0)
+  clicks           Int        @default(0)
+  conversions      Int        @default(0)
+  conversionValue  Decimal?   @db.Decimal(12, 2)
+  raw              Json? // payload bruto da API pra auditoria/debug
+  dataOrigin       DataOrigin @default(LIVE)
+  sourceSystem     String?
+  sourceExternalId String?
+  sourcedAt        DateTime   @default(now())
+  sourceMetadata   Json?
+  createdAt        DateTime   @default(now())
 
   @@unique([campaignId, date])
+  @@index([dataOrigin])
+  @@index([sourceSystem, sourceExternalId])
 }
 
 // --- Conversões offline (de qualquer origem) ---
@@ -273,6 +287,10 @@ model ConversionEvent {
   device         String?
   browser        String?
   os             String?
+  dataOrigin     DataOrigin           @default(MANUAL)
+  sourceSystem   String?
+  sourcedAt      DateTime             @default(now())
+  actorUserId    String?
   createdAt      DateTime             @default(now())
 
   company Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -283,6 +301,7 @@ model ConversionEvent {
   @@index([createdAt])
   @@index([companyId, createdAt])
   @@index([companyId, channel])
+  @@index([companyId, dataOrigin])
 }
 
 // --- Alertas ---
@@ -387,57 +406,57 @@ model AttendanceStatus {
 }
 
 model Attendance {
-  id                     String   @id @default(cuid())
+  id                     String  @id @default(cuid())
   companyId              String
   leadId                 String?
   campaignId             String?
   statusId               String
-  whatsappConversationId  String?
+  whatsappConversationId String?
   attendantId            String?
   creatorId              String?
 
-  clientName             String
-  clientPhone            String
-  clientEmail            String?
-  origin                 String?
-  channel                String?
-  campaignName           String?
-  adName                 String?
-  creativeName           String?
-  productName            String?
-  responsibleName        String?
-  tenantName             String?
+  clientName      String
+  clientPhone     String
+  clientEmail     String?
+  origin          String?
+  channel         String?
+  campaignName    String?
+  adName          String?
+  creativeName    String?
+  productName     String?
+  responsibleName String?
+  tenantName      String?
 
-  priority               String   @default("normal")
-  currentQueuePosition   Int?
+  priority             String @default("normal")
+  currentQueuePosition Int?
 
-  startedAt              DateTime @default(now())
-  firstContactAt         DateTime?
-  lastActivityAt         DateTime?
-  dueAt                  DateTime?
-  finishedAt             DateTime?
-  responseTimeSeconds    Int?
-  totalHandlingSeconds   Int?
+  startedAt            DateTime  @default(now())
+  firstContactAt       DateTime?
+  lastActivityAt       DateTime?
+  dueAt                DateTime?
+  finishedAt           DateTime?
+  responseTimeSeconds  Int?
+  totalHandlingSeconds Int?
 
-  notes                  String?
-  customFields           Json?
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  notes        String?
+  customFields Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  company                Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  lead                   Lead?                 @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  campaign               Campaign?             @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  status                 AttendanceStatus      @relation(fields: [statusId], references: [id], onDelete: Restrict)
-  whatsappConversation   WhatsAppConversation? @relation(fields: [whatsappConversationId], references: [id], onDelete: SetNull)
-  attendant              User?                 @relation("AttendanceAttendant", fields: [attendantId], references: [id], onDelete: SetNull)
-  creator                User?                 @relation("AttendanceCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+  company              Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lead                 Lead?                 @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  campaign             Campaign?             @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  status               AttendanceStatus      @relation(fields: [statusId], references: [id], onDelete: Restrict)
+  whatsappConversation WhatsAppConversation? @relation(fields: [whatsappConversationId], references: [id], onDelete: SetNull)
+  attendant            User?                 @relation("AttendanceAttendant", fields: [attendantId], references: [id], onDelete: SetNull)
+  creator              User?                 @relation("AttendanceCreator", fields: [creatorId], references: [id], onDelete: SetNull)
 
-  histories              AttendanceHistory[]
-  reminders              Reminder[]
-  followUps              FollowUp[]
-  notifications          Notification[]
-  queueItem              AttendanceQueue?
-  saleResult             SaleResult?
+  histories     AttendanceHistory[]
+  reminders     Reminder[]
+  followUps     FollowUp[]
+  notifications Notification[]
+  queueItem     AttendanceQueue?
+  saleResult    SaleResult?
 
   @@index([companyId])
   @@index([statusId])
@@ -465,10 +484,10 @@ model AttendanceHistory {
   metadata         Json?
   createdAt        DateTime @default(now())
 
-  company          Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  attendance       Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
-  lead             Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  user             User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  company    Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  lead       Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  user       User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([companyId])
   @@index([attendanceId])
@@ -478,30 +497,30 @@ model AttendanceHistory {
 }
 
 model Reminder {
-  id              String            @id @default(cuid())
-  companyId       String
-  attendanceId    String?
-  leadId          String?
-  assignedToId    String?
+  id           String  @id @default(cuid())
+  companyId    String
+  attendanceId String?
+  leadId       String?
+  assignedToId String?
 
-  triggerType     ReminderTriggerType
-  status          ReminderStatus    @default(PENDING)
-  title           String
-  description     String?
-  scheduledAt     DateTime
-  triggeredAt     DateTime?
-  completedAt     DateTime?
-  notes           String?
-  customFields    Json?
+  triggerType  ReminderTriggerType
+  status       ReminderStatus      @default(PENDING)
+  title        String
+  description  String?
+  scheduledAt  DateTime
+  triggeredAt  DateTime?
+  completedAt  DateTime?
+  notes        String?
+  customFields Json?
 
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  company         Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  attendance      Attendance?       @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
-  lead            Lead?             @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  assignedTo      User?             @relation("ReminderAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
-  notifications   Notification[]
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  attendance    Attendance?    @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  lead          Lead?          @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  assignedTo    User?          @relation("ReminderAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  notifications Notification[]
 
   @@index([companyId])
   @@index([attendanceId])
@@ -514,28 +533,28 @@ model Reminder {
 }
 
 model FollowUp {
-  id              String          @id @default(cuid())
-  companyId       String
-  attendanceId    String?
-  leadId          String?
-  assignedToId    String?
+  id           String  @id @default(cuid())
+  companyId    String
+  attendanceId String?
+  leadId       String?
+  assignedToId String?
 
-  status          FollowUpStatus  @default(PENDING)
-  title           String
-  description     String?
-  scheduledFor    DateTime
-  completedAt     DateTime?
-  notes           String?
-  customFields    Json?
+  status       FollowUpStatus @default(PENDING)
+  title        String
+  description  String?
+  scheduledFor DateTime
+  completedAt  DateTime?
+  notes        String?
+  customFields Json?
 
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  attendance      Attendance?     @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
-  lead            Lead?           @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  assignedTo      User?           @relation("FollowUpAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
-  notifications   Notification[]
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  attendance    Attendance?    @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  lead          Lead?          @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  assignedTo    User?          @relation("FollowUpAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  notifications Notification[]
 
   @@index([companyId])
   @@index([attendanceId])
@@ -548,18 +567,18 @@ model FollowUp {
 }
 
 model LossReason {
-  id            String               @id @default(cuid())
-  companyId     String
-  reason        RevenueLossReasonType
-  name          String
-  description   String?
-  displayOrder  Int                  @default(0)
-  isActive      Boolean              @default(true)
-  createdAt     DateTime             @default(now())
-  updatedAt     DateTime             @updatedAt
+  id           String                @id @default(cuid())
+  companyId    String
+  reason       RevenueLossReasonType
+  name         String
+  description  String?
+  displayOrder Int                   @default(0)
+  isActive     Boolean               @default(true)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
 
-  company       Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  saleResults   SaleResult[]
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  saleResults SaleResult[]
 
   @@unique([companyId, reason])
   @@index([companyId])
@@ -568,30 +587,30 @@ model LossReason {
 }
 
 model SaleResult {
-  id             String              @id @default(cuid())
-  companyId      String
-  attendanceId   String             @unique
-  leadId         String?
-  revenueSaleId  String?            @unique
-  lossReasonId   String?
+  id            String  @id @default(cuid())
+  companyId     String
+  attendanceId  String  @unique
+  leadId        String?
+  revenueSaleId String? @unique
+  lossReasonId  String?
 
-  resultType     AttendanceResultType
-  amount         Decimal?           @db.Decimal(12, 2)
-  productName    String?
-  paymentMethod  String?
-  paymentDate    DateTime?
-  observation    String?
-  resultDate     DateTime           @default(now())
-  resultTime     String?
-  customFields   Json?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  resultType    AttendanceResultType
+  amount        Decimal?             @db.Decimal(12, 2)
+  productName   String?
+  paymentMethod String?
+  paymentDate   DateTime?
+  observation   String?
+  resultDate    DateTime             @default(now())
+  resultTime    String?
+  customFields  Json?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
 
-  company        Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  attendance     Attendance         @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
-  lead           Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  revenueSale    RevenueSale?       @relation(fields: [revenueSaleId], references: [id], onDelete: SetNull)
-  lossReason     LossReason?        @relation(fields: [lossReasonId], references: [id], onDelete: SetNull)
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  attendance  Attendance   @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  lead        Lead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  revenueSale RevenueSale? @relation(fields: [revenueSaleId], references: [id], onDelete: SetNull)
+  lossReason  LossReason?  @relation(fields: [lossReasonId], references: [id], onDelete: SetNull)
 
   @@index([companyId])
   @@index([leadId])
@@ -609,8 +628,8 @@ model SalesGoal {
   description     String?
   metricType      String
   targetValue     Decimal  @db.Decimal(12, 2)
-  currentValue    Decimal  @db.Decimal(12, 2) @default(0)
-  progressPercent Decimal  @db.Decimal(5, 2) @default(0)
+  currentValue    Decimal  @default(0) @db.Decimal(12, 2)
+  progressPercent Decimal  @default(0) @db.Decimal(5, 2)
   startDate       DateTime
   endDate         DateTime
   status          String   @default("active")
@@ -619,7 +638,7 @@ model SalesGoal {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([status])
@@ -629,31 +648,31 @@ model SalesGoal {
 }
 
 model Notification {
-  id               String             @id @default(cuid())
-  companyId        String
-  attendanceId     String?
-  reminderId       String?
-  followUpId       String?
-  recipientUserId  String?
+  id              String  @id @default(cuid())
+  companyId       String
+  attendanceId    String?
+  reminderId      String?
+  followUpId      String?
+  recipientUserId String?
 
-  channel          NotificationChannel
-  status           NotificationStatus @default(PENDING)
-  type             String
-  title            String
-  message          String
-  payload          Json?
-  sentAt           DateTime?
-  deliveredAt      DateTime?
-  readAt           DateTime?
-  errorMessage     String?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  channel      NotificationChannel
+  status       NotificationStatus  @default(PENDING)
+  type         String
+  title        String
+  message      String
+  payload      Json?
+  sentAt       DateTime?
+  deliveredAt  DateTime?
+  readAt       DateTime?
+  errorMessage String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
 
-  company          Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  attendance       Attendance?        @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
-  reminder         Reminder?          @relation(fields: [reminderId], references: [id], onDelete: Cascade)
-  followUp         FollowUp?          @relation(fields: [followUpId], references: [id], onDelete: Cascade)
-  recipientUser    User?              @relation("NotificationRecipient", fields: [recipientUserId], references: [id], onDelete: SetNull)
+  company       Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  attendance    Attendance? @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  reminder      Reminder?   @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+  followUp      FollowUp?   @relation(fields: [followUpId], references: [id], onDelete: Cascade)
+  recipientUser User?       @relation("NotificationRecipient", fields: [recipientUserId], references: [id], onDelete: SetNull)
 
   @@index([companyId])
   @@index([attendanceId])
@@ -667,25 +686,25 @@ model Notification {
 }
 
 model AttendanceQueue {
-  id                String          @id @default(cuid())
-  companyId         String
-  attendanceId      String          @unique
-  queueName         String          @default("default")
-  queueStatus       QueueItemStatus @default(WAITING)
-  position          Int             @default(0)
-  priority          Int             @default(0)
-  queuedAt          DateTime        @default(now())
-  scheduledFor      DateTime?
-  startedAt         DateTime?
-  processedAt       DateTime?
+  id                   String          @id @default(cuid())
+  companyId            String
+  attendanceId         String          @unique
+  queueName            String          @default("default")
+  queueStatus          QueueItemStatus @default(WAITING)
+  position             Int             @default(0)
+  priority             Int             @default(0)
+  queuedAt             DateTime        @default(now())
+  scheduledFor         DateTime?
+  startedAt            DateTime?
+  processedAt          DateTime?
   estimatedWaitSeconds Int?
-  notes             String?
-  customFields      Json?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  notes                String?
+  customFields         Json?
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
 
-  company           Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  attendance        Attendance      @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  company    Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  attendance Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([attendanceId])
@@ -699,66 +718,78 @@ model AttendanceQueue {
 // --- Leads (CRM) ---
 
 model Lead {
-  id              String   @id @default(cuid())
-  companyId       String
-  name            String
-  email           String?
-  phone           String?
-  whatsapp        String?
-  source          String   @default("organic")
-  campaign        String?
-  adSet           String?
-  ad              String?
-  keyword         String?
-  city            String?
-  state           String?
-  country         String?  @default("BR")
-  productInterest String?
-  estimatedValue  Decimal? @db.Decimal(12, 2)
-  campaignId      String?
-  valueInvested   Decimal? @db.Decimal(12, 2)
-  notes_internal  String?
-  tagsJson        String?
-  customFields    Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String     @id @default(cuid())
+  companyId        String
+  name             String
+  email            String?
+  phone            String?
+  whatsapp         String?
+  source           String     @default("organic")
+  campaign         String?
+  adSet            String?
+  ad               String?
+  keyword          String?
+  city             String?
+  state            String?
+  country          String?    @default("BR")
+  productInterest  String?
+  estimatedValue   Decimal?   @db.Decimal(12, 2)
+  campaignId       String?
+  valueInvested    Decimal?   @db.Decimal(12, 2)
+  notes_internal   String?
+  tagsJson         String?
+  customFields     Json?
+  dataOrigin       DataOrigin @default(MANUAL)
+  sourceSystem     String?
+  sourceExternalId String?
+  sourcedAt        DateTime   @default(now())
+  actorUserId      String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
 
-  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  campaignRef Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
-  revenueSales RevenueSale[]
-  aiAnalyses   AIAnalysis[]
-  attendances  Attendance[]
+  company                  Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  campaignRef              Campaign?           @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  revenueSales             RevenueSale[]
+  aiAnalyses               AIAnalysis[]
+  attendances              Attendance[]
   attendanceHistoryEntries AttendanceHistory[]
-  reminders    Reminder[]
-  followUps    FollowUp[]
-  saleResults  SaleResult[]
+  reminders                Reminder[]
+  followUps                FollowUp[]
+  saleResults              SaleResult[]
 
   @@unique([companyId, email, phone])
   @@index([companyId])
   @@index([source])
   @@index([campaign])
   @@index([createdAt])
+  @@index([companyId, dataOrigin])
+  @@index([sourceSystem, sourceExternalId])
 }
 
 // --- Vendas (Financeiro) ---
 
 model Sale {
-  id            String    @id @default(cuid())
-  companyId     String
-  amount        Decimal   @db.Decimal(12, 2)
-  profit        Decimal?  @db.Decimal(12, 2)
-  commission    Decimal?  @db.Decimal(12, 2)
-  source        String    @default("manual")
-  campaignId    String?
-  paymentMethod String?
-  paymentStatus String    @default("pending")
-  productName   String?
-  quantity      Int?      @default(1)
-  notes         String?
-  customFields  Json?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  completedAt   DateTime?
+  id               String     @id @default(cuid())
+  companyId        String
+  amount           Decimal    @db.Decimal(12, 2)
+  profit           Decimal?   @db.Decimal(12, 2)
+  commission       Decimal?   @db.Decimal(12, 2)
+  source           String     @default("manual")
+  campaignId       String?
+  paymentMethod    String?
+  paymentStatus    String     @default("pending")
+  productName      String?
+  quantity         Int?       @default(1)
+  notes            String?
+  customFields     Json?
+  dataOrigin       DataOrigin @default(MANUAL)
+  sourceSystem     String?
+  sourceExternalId String?
+  sourcedAt        DateTime   @default(now())
+  actorUserId      String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  completedAt      DateTime?
 
   company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   campaign Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
@@ -767,6 +798,8 @@ model Sale {
   @@index([source])
   @@index([paymentStatus])
   @@index([createdAt])
+  @@index([companyId, dataOrigin])
+  @@index([sourceSystem, sourceExternalId])
 }
 
 // --- Integrações ---
@@ -840,10 +873,10 @@ model Workflow {
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
 
-  company     Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  triggers    WorkflowTrigger[]
-  actions     WorkflowAction[]
-  executions  WorkflowExecution[]
+  company    Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  triggers   WorkflowTrigger[]
+  actions    WorkflowAction[]
+  executions WorkflowExecution[]
 
   @@index([companyId])
   @@index([status])
@@ -851,16 +884,16 @@ model Workflow {
 }
 
 model WorkflowTrigger {
-  id             String              @id @default(cuid())
-  workflowId     String
-  triggerType    WorkflowTriggerType
-  config         Json
-  isActive       Boolean             @default(true)
+  id              String              @id @default(cuid())
+  workflowId      String
+  triggerType     WorkflowTriggerType
+  config          Json
+  isActive        Boolean             @default(true)
   lastTriggeredAt DateTime?
-  createdAt      DateTime            @default(now())
-  updatedAt      DateTime            @updatedAt
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 
-  workflow       Workflow            @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 
   @@index([workflowId])
   @@index([triggerType])
@@ -868,16 +901,16 @@ model WorkflowTrigger {
 }
 
 model WorkflowAction {
-  id          String              @id @default(cuid())
+  id          String             @id @default(cuid())
   workflowId  String
   actionType  WorkflowActionType
   config      Json
-  actionOrder Int                 @default(0)
-  isActive    Boolean             @default(true)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  actionOrder Int                @default(0)
+  isActive    Boolean            @default(true)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 
-  workflow    Workflow            @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  workflow Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
 
   @@index([workflowId])
   @@index([actionType])
@@ -897,7 +930,7 @@ model WorkflowTemplate {
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
 
-  company      Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([triggerType])
@@ -905,23 +938,23 @@ model WorkflowTemplate {
 }
 
 model WorkflowExecution {
-  id           String                 @id @default(cuid())
-  workflowId   String
-  companyId    String
-  status       WorkflowExecutionStatus @default(PENDING)
-  triggerType  WorkflowTriggerType
-  triggeredBy  String?
-  triggerData  Json?
-  startedAt    DateTime?
-  completedAt  DateTime?
-  durationMs   Int?
-  result       Json?
-  createdAt    DateTime               @default(now())
-  updatedAt    DateTime               @updatedAt
+  id          String                  @id @default(cuid())
+  workflowId  String
+  companyId   String
+  status      WorkflowExecutionStatus @default(PENDING)
+  triggerType WorkflowTriggerType
+  triggeredBy String?
+  triggerData Json?
+  startedAt   DateTime?
+  completedAt DateTime?
+  durationMs  Int?
+  result      Json?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
 
-  workflow     Workflow               @relation(fields: [workflowId], references: [id], onDelete: Cascade)
-  logs         WorkflowExecutionLog[]
-  company      Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  workflow Workflow               @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  logs     WorkflowExecutionLog[]
+  company  Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([workflowId])
@@ -937,8 +970,8 @@ model WorkflowExecutionLog {
   payload     Json?
   createdAt   DateTime @default(now())
 
-  execution   WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
-  company     Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  execution WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  company   Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([executionId])
@@ -960,10 +993,10 @@ model WhatsAppConversation {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
-  company  Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  messages WhatsAppMessage[]
-  analyses AIAnalysis[]
-  attendances           Attendance[]
+  company     Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  messages    WhatsAppMessage[]
+  analyses    AIAnalysis[]
+  attendances Attendance[]
 
   @@unique([companyId, phoneNumber])
   @@index([companyId])
@@ -971,22 +1004,26 @@ model WhatsAppConversation {
 }
 
 model WhatsAppMessage {
-  id             String   @id @default(cuid())
+  id             String     @id @default(cuid())
   conversationId String
   role           String
-  content        String   @db.Text
+  content        String     @db.Text
   externalId     String?
   type           String?
   mediaUrl       String?
   sentiment      String?
   hasObjection   Boolean?
-  createdAt      DateTime @default(now())
+  dataOrigin     DataOrigin @default(LIVE)
+  sourceSystem   String?    @default("WHATSAPP")
+  sourcedAt      DateTime   @default(now())
+  createdAt      DateTime   @default(now())
 
   conversation WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
   @@index([role])
   @@index([createdAt])
+  @@index([dataOrigin])
 }
 
 // --- Auditoria ---
@@ -1018,68 +1055,68 @@ model AuditLog {
 // --- IA Autônoma para Leads ---
 
 model CompanyKnowledge {
-  id                String    @id @default(cuid())
-  companyId         String    @unique
+  id        String @id @default(cuid())
+  companyId String @unique
 
   // Website
-  websiteUrl        String?
-  websiteContent    String?   @db.Text
+  websiteUrl     String?
+  websiteContent String? @db.Text
 
   // Instagram
-  instagramHandle   String?
-  instagramBio      String?
-  instagramPosts    Json?
+  instagramHandle String?
+  instagramBio    String?
+  instagramPosts  Json?
 
   // Produtos/Serviços
-  products          Json?
-  services          Json?
+  products Json?
+  services Json?
 
   // Informações-chave
-  mission           String?   @db.Text
-  values            Json?
-  history           String?   @db.Text
-  locations         Json?
+  mission   String? @db.Text
+  values    Json?
+  history   String? @db.Text
+  locations Json?
 
   // Horários e contato
-  businessHours     Json?
-  phone             String?
-  email             String?
+  businessHours Json?
+  phone         String?
+  email         String?
 
   // Embedding para busca
   knowledgeEmbedding String? @db.Text
 
   // Rastreamento
-  lastScrapedAt     DateTime?
-  scrapedFrom       String?
+  lastScrapedAt DateTime?
+  scrapedFrom   String?
 
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  company           Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
 }
 
 model LeadInteraction {
-  id                String    @id @default(cuid())
-  companyId         String
+  id        String @id @default(cuid())
+  companyId String
 
-  sourceType        String
-  leadEmail         String?
-  leadPhone         String?
-  leadName          String?
+  sourceType String
+  leadEmail  String?
+  leadPhone  String?
+  leadName   String?
 
-  messageReceived   String    @db.Text
-  aiResponse        String    @db.Text
+  messageReceived String @db.Text
+  aiResponse      String @db.Text
 
-  actionTaken       String
+  actionTaken        String
   qualificationScore Int?
-  resultType        String?
+  resultType         String?
 
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  company           Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([sourceType])
@@ -1088,7 +1125,7 @@ model LeadInteraction {
 }
 
 model AIAnalysis {
-  id             String    @id @default(cuid())
+  id             String   @id @default(cuid())
   companyId      String
   conversationId String?
   leadId         String?
@@ -1097,12 +1134,12 @@ model AIAnalysis {
   confidence     Float?
   model          String?
   tokensUsed     Int?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  company        Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  conversation   WhatsAppConversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  lead           Lead?             @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  company      Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  conversation WhatsAppConversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  lead         Lead?                 @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([conversationId])
@@ -1149,65 +1186,65 @@ enum RevenueLossReasonType {
 
 // --- Revenue Sales: Vendas com histórico completo ---
 model RevenueSale {
-  id                String                @id @default(cuid())
-  companyId         String
-  leadId            String?
-  campaignId        String?
-  saleSourceId      String?
+  id           String  @id @default(cuid())
+  companyId    String
+  leadId       String?
+  campaignId   String?
+  saleSourceId String?
 
-  status            RevenueSaleStatus     @default(NOVO)
+  status RevenueSaleStatus @default(NOVO)
 
   // Cliente
-  clientName        String
-  clientPhone       String?
-  clientEmail       String?
+  clientName  String
+  clientPhone String?
+  clientEmail String?
 
   // Valor e Produtos
-  totalAmount       Decimal               @db.Decimal(12, 2)
-  products          Json // array de {id, name, quantity, unitPrice, totalPrice}
+  totalAmount Decimal @db.Decimal(12, 2)
+  products    Json // array de {id, name, quantity, unitPrice, totalPrice}
 
   // Atendimento
-  attendantId       String? // userId que atendeu
-  attendantName     String?
+  attendantId   String? // userId que atendeu
+  attendantName String?
 
   // Pagamento
-  paymentMethod     String?
-  paymentStatus     String                @default("pending")
-  paymentDate       DateTime?
+  paymentMethod String?
+  paymentStatus String    @default("pending")
+  paymentDate   DateTime?
 
   // Custos e Margem
-  totalCost         Decimal?              @db.Decimal(12, 2) // custo dos produtos
-  advertisingCost   Decimal?              @db.Decimal(12, 2) // custo do anúncio
-  otherCosts        Decimal?              @db.Decimal(12, 2) // outros custos
-  profitAmount      Decimal?              @db.Decimal(12, 2) // lucro bruto
-  profitMargin      Decimal?              @db.Decimal(5, 2) // % margem
+  totalCost       Decimal? @db.Decimal(12, 2) // custo dos produtos
+  advertisingCost Decimal? @db.Decimal(12, 2) // custo do anúncio
+  otherCosts      Decimal? @db.Decimal(12, 2) // outros custos
+  profitAmount    Decimal? @db.Decimal(12, 2) // lucro bruto
+  profitMargin    Decimal? @db.Decimal(5, 2) // % margem
 
   // Se perdida
-  lossReasonId      String?
-  lossNotes         String?
-  valueLost         Decimal?              @db.Decimal(12, 2)
+  lossReasonId String?
+  lossNotes    String?
+  valueLost    Decimal? @db.Decimal(12, 2)
 
   // Observações e Metadados
-  notes             String?
-  customFields      Json?
+  notes        String?
+  customFields Json?
 
-  saleDate          DateTime              @default(now())
-  saleTime          String? // HH:MM formato
-  completedAt       DateTime?
-  canceledAt        DateTime?
+  saleDate    DateTime  @default(now())
+  saleTime    String? // HH:MM formato
+  completedAt DateTime?
+  canceledAt  DateTime?
 
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  company           Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  lead              Lead?                 @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  campaign          Campaign?             @relation("RevenueSalesToCampaign", fields: [campaignId], references: [id], onDelete: SetNull)
-  source            RevenueSource?        @relation(fields: [saleSourceId], references: [id], onDelete: SetNull)
-  lossReason        RevenueLossReason?    @relation(fields: [lossReasonId], references: [id], onDelete: SetNull)
+  company    Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lead       Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  campaign   Campaign?          @relation("RevenueSalesToCampaign", fields: [campaignId], references: [id], onDelete: SetNull)
+  source     RevenueSource?     @relation(fields: [saleSourceId], references: [id], onDelete: SetNull)
+  lossReason RevenueLossReason? @relation(fields: [lossReasonId], references: [id], onDelete: SetNull)
 
-  timeline          RevenueTimeline[]
-  commissions       RevenueCommission[]
-  saleResult        SaleResult?
+  timeline    RevenueTimeline[]
+  commissions RevenueCommission[]
+  saleResult  SaleResult?
 
   @@index([companyId])
   @@index([status])
@@ -1221,19 +1258,19 @@ model RevenueSale {
 
 // --- Revenue Source: Origem de vendas ---
 model RevenueSource {
-  id                String                @id @default(cuid())
-  companyId         String
+  id        String @id @default(cuid())
+  companyId String
 
-  sourceType        RevenueSourceType
-  displayName       String
-  description       String?
-  isActive          Boolean               @default(true)
+  sourceType  RevenueSourceType
+  displayName String
+  description String?
+  isActive    Boolean           @default(true)
 
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  company           Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  sales             RevenueSale[]
+  company Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sales   RevenueSale[]
 
   @@unique([companyId, sourceType])
   @@index([companyId])
@@ -1241,27 +1278,27 @@ model RevenueSource {
 
 // --- Revenue Product: Produtos com margem ---
 model RevenueProduct {
-  id                String                @id @default(cuid())
-  companyId         String
+  id        String @id @default(cuid())
+  companyId String
 
-  name              String
-  description       String?
-  sku               String?
-  category          String?
+  name        String
+  description String?
+  sku         String?
+  category    String?
 
-  basePrice         Decimal               @db.Decimal(12, 2)
-  costPrice         Decimal?              @db.Decimal(12, 2)
-  marginPercent     Decimal?              @db.Decimal(5, 2)
+  basePrice     Decimal  @db.Decimal(12, 2)
+  costPrice     Decimal? @db.Decimal(12, 2)
+  marginPercent Decimal? @db.Decimal(5, 2)
 
-  commissionType    String?               // fixed, percentage
-  commissionAmount  Decimal?              @db.Decimal(12, 2)
+  commissionType   String? // fixed, percentage
+  commissionAmount Decimal? @db.Decimal(12, 2)
 
-  isActive          Boolean               @default(true)
+  isActive Boolean @default(true)
 
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  company           Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([isActive])
@@ -1269,19 +1306,19 @@ model RevenueProduct {
 
 // --- Revenue Loss Reason: Motivos de perda ---
 model RevenueLossReason {
-  id                String                @id @default(cuid())
-  companyId         String
+  id        String @id @default(cuid())
+  companyId String
 
-  reason            RevenueLossReasonType
-  description       String?
-  displayOrder      Int                   @default(0)
-  isActive          Boolean               @default(true)
+  reason       RevenueLossReasonType
+  description  String?
+  displayOrder Int                   @default(0)
+  isActive     Boolean               @default(true)
 
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  company           Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  sales             RevenueSale[]
+  company Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sales   RevenueSale[]
 
   @@unique([companyId, reason])
   @@index([companyId])
@@ -1289,23 +1326,23 @@ model RevenueLossReason {
 
 // --- Revenue Timeline: Histórico completo de cada venda ---
 model RevenueTimeline {
-  id                String                @id @default(cuid())
-  companyId         String
-  saleId            String
+  id        String @id @default(cuid())
+  companyId String
+  saleId    String
 
-  eventType         String // lead_created, first_contact, stage_changed, sale_completed, etc
-  eventDescription  String
+  eventType        String // lead_created, first_contact, stage_changed, sale_completed, etc
+  eventDescription String
 
-  previousValue     String?
-  newValue          String?
+  previousValue String?
+  newValue      String?
 
-  userId            String? // quem fez a ação
-  userEmail         String?
+  userId    String? // quem fez a ação
+  userEmail String?
 
-  createdAt         DateTime              @default(now())
+  createdAt DateTime @default(now())
 
-  company           Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  sale              RevenueSale           @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  company Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sale    RevenueSale @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([saleId])
@@ -1315,46 +1352,46 @@ model RevenueTimeline {
 
 // --- Revenue Indicator: KPIs calculados ---
 model RevenueIndicator {
-  id                String                @id @default(cuid())
-  companyId         String
+  id        String @id @default(cuid())
+  companyId String
 
-  period            String                // day, week, month, quarter, year
-  date              DateTime              @db.Date
+  period String // day, week, month, quarter, year
+  date   DateTime @db.Date
 
   // Investimento
-  totalInvestment   Decimal               @db.Decimal(12, 2)
+  totalInvestment Decimal @db.Decimal(12, 2)
 
   // Vendas
-  totalRevenue      Decimal               @db.Decimal(12, 2)
-  totalSales        Int
-  avgTicket         Decimal               @db.Decimal(12, 2)
+  totalRevenue Decimal @db.Decimal(12, 2)
+  totalSales   Int
+  avgTicket    Decimal @db.Decimal(12, 2)
 
   // Custos e Lucro
-  totalCost         Decimal?              @db.Decimal(12, 2)
-  totalProfit       Decimal?              @db.Decimal(12, 2)
-  profitMargin      Decimal?              @db.Decimal(5, 2)
+  totalCost    Decimal? @db.Decimal(12, 2)
+  totalProfit  Decimal? @db.Decimal(12, 2)
+  profitMargin Decimal? @db.Decimal(5, 2)
 
   // Conversão
-  totalLeads        Int
-  conversionRate    Decimal               @db.Decimal(5, 2) // %
+  totalLeads     Int
+  conversionRate Decimal @db.Decimal(5, 2) // %
 
   // KPIs
-  roas              Decimal               @db.Decimal(10, 2)
-  roi               Decimal               @db.Decimal(10, 2) // %
-  cac               Decimal               @db.Decimal(12, 2)
-  cpa               Decimal               @db.Decimal(12, 2)
-  ltv               Decimal?              @db.Decimal(12, 2)
+  roas Decimal  @db.Decimal(10, 2)
+  roi  Decimal  @db.Decimal(10, 2) // %
+  cac  Decimal  @db.Decimal(12, 2)
+  cpa  Decimal  @db.Decimal(12, 2)
+  ltv  Decimal? @db.Decimal(12, 2)
 
   // Segmentação
-  channel           String?
-  campaignId        String?
-  productId         String?
-  attendantId       String?
+  channel     String?
+  campaignId  String?
+  productId   String?
+  attendantId String?
 
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  company           Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@unique([companyId, period, date, channel, campaignId, productId, attendantId])
   @@index([companyId])
@@ -1366,26 +1403,26 @@ model RevenueIndicator {
 
 // --- Revenue Goal: Metas ---
 model RevenueGoal {
-  id                String                @id @default(cuid())
-  companyId         String
+  id        String @id @default(cuid())
+  companyId String
 
-  name              String
-  description       String?
+  name        String
+  description String?
 
-  metricType        String // revenue, sales, roas, roi, etc
-  targetValue       Decimal               @db.Decimal(12, 2)
-  currentValue      Decimal               @db.Decimal(12, 2) @default(0)
+  metricType   String // revenue, sales, roas, roi, etc
+  targetValue  Decimal @db.Decimal(12, 2)
+  currentValue Decimal @default(0) @db.Decimal(12, 2)
 
-  progressPercent   Decimal               @db.Decimal(5, 2) @default(0)
+  progressPercent Decimal @default(0) @db.Decimal(5, 2)
 
-  startDate         DateTime
-  endDate           DateTime
-  status            String                @default("active") // active, completed, missed
+  startDate DateTime
+  endDate   DateTime
+  status    String   @default("active") // active, completed, missed
 
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  company           Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([status])
@@ -1394,21 +1431,21 @@ model RevenueGoal {
 
 // --- Revenue Forecast: Projeções ---
 model RevenueForecast {
-  id                String                @id @default(cuid())
-  companyId         String
+  id        String @id @default(cuid())
+  companyId String
 
-  forecastDate      DateTime              @db.Date
-  projectedRevenue  Decimal               @db.Decimal(12, 2)
-  projectedSales    Int
-  projectedProfit   Decimal?              @db.Decimal(12, 2)
+  forecastDate     DateTime @db.Date
+  projectedRevenue Decimal  @db.Decimal(12, 2)
+  projectedSales   Int
+  projectedProfit  Decimal? @db.Decimal(12, 2)
 
-  confidence        Decimal               @db.Decimal(3, 0) // 0-100%
-  notes             String?
+  confidence Decimal @db.Decimal(3, 0) // 0-100%
+  notes      String?
 
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  company           Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([forecastDate])
@@ -1416,24 +1453,24 @@ model RevenueForecast {
 
 // --- Revenue Commission: Comissões ---
 model RevenueCommission {
-  id                String                @id @default(cuid())
-  companyId         String
-  saleId            String
+  id        String @id @default(cuid())
+  companyId String
+  saleId    String
 
-  attendantId       String?
-  attendantName     String?
+  attendantId   String?
+  attendantName String?
 
-  commissionType    String // fixed, percentage
-  commissionAmount  Decimal               @db.Decimal(12, 2)
+  commissionType   String // fixed, percentage
+  commissionAmount Decimal @db.Decimal(12, 2)
 
-  status            String                @default("pending") // pending, calculated, paid
-  paidAt            DateTime?
+  status String    @default("pending") // pending, calculated, paid
+  paidAt DateTime?
 
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  company           Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  sale              RevenueSale           @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  company Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sale    RevenueSale @relation(fields: [saleId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@index([status])
@@ -1442,24 +1479,24 @@ model RevenueCommission {
 
 // --- Revenue Score: Score para ranking ---
 model RevenueScore {
-  id                String                @id @default(cuid())
-  companyId         String
+  id        String @id @default(cuid())
+  companyId String
 
-  scoreType         String // campaign, product, attendant, channel
-  targetId          String // campaign.id, product.id, etc
+  scoreType String // campaign, product, attendant, channel
+  targetId  String // campaign.id, product.id, etc
 
-  score             Decimal               @db.Decimal(5, 2) // 0-100
+  score Decimal @db.Decimal(5, 2) // 0-100
 
   // Métrica base
-  baseMetric        String // revenue, profit, roas, roi, etc
-  baseValue         Decimal               @db.Decimal(12, 2)
+  baseMetric String // revenue, profit, roas, roi, etc
+  baseValue  Decimal @db.Decimal(12, 2)
 
-  rank              Int?
+  rank Int?
 
-  createdAt         DateTime              @default(now())
-  updatedAt         DateTime              @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  company           Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@unique([companyId, scoreType, targetId])
   @@index([companyId])

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { getUserMetaAccounts, storeMetaAccessToken } from "@/lib/meta-ads/auth";
+import { prisma } from "@/lib/prisma";
+import { validateCompanyAccess } from "@/lib/auth-middleware";
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,9 +14,16 @@ export async function GET(req: NextRequest) {
     }
 
     const accessToken = process.env.META_ADS_ACCESS_TOKEN;
+    const companyId = req.nextUrl.searchParams.get("companyId");
+    const memberships = await prisma.companyUser.findMany({ where: { userId: session.user.id! }, select: { companyId: true } });
+    const companyIds = memberships.map((membership) => membership.companyId);
+    if (companyId) {
+      const access = await validateCompanyAccess(session.user.id!, companyId);
+      if (!access.valid) return NextResponse.json({ error: access.error }, { status: 403 });
+    }
     let syncedCount = 0;
 
-    if (accessToken) {
+    if (accessToken && companyId) {
       try {
         // 1. Discover direct ad accounts
         const adUrl = `https://graph.facebook.com/v21.0/me/adaccounts?fields=id,name&access_token=${accessToken}`;
@@ -27,6 +36,7 @@ export async function GET(req: NextRequest) {
               accessToken,
               businessAccountId: acc.id,
               accountName: acc.name,
+              companyId,
             });
             syncedCount++;
           }
@@ -46,6 +56,7 @@ export async function GET(req: NextRequest) {
                   accessToken,
                   businessAccountId: adAcc.id,
                   accountName: adAcc.name || business.name,
+                  companyId,
                 });
                 syncedCount++;
               }
@@ -59,7 +70,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Get all accounts from database (including discovered ones)
-    const accounts = await getUserMetaAccounts();
+    const accounts = await getUserMetaAccounts(companyIds);
     console.log(`[meta/accounts] returning ${accounts.length} account(s)`);
 
     return NextResponse.json({

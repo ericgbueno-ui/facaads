@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { auth } from "@/lib/auth";
 import { getUserTikTokAdsAccounts } from "@/lib/tiktok-ads/auth";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,7 +12,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const accounts = await getUserTikTokAdsAccounts();
+    const memberships = await prisma.companyUser.findMany({ where: { userId: session.user.id! }, select: { companyId: true } });
+    const accounts = await getUserTikTokAdsAccounts(memberships.map((membership) => membership.companyId));
 
     return NextResponse.json({
       ok: true,

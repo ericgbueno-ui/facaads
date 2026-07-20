@@ -71,6 +71,9 @@ export async function POST(request: NextRequest) {
           email: lead.email,
           phone: lead.phone,
           source: lead.source,
+          dataOrigin: "LIVE",
+          sourceSystem: lead.source.toUpperCase(),
+          sourcedAt: new Date(),
           estimatedValue: aiResponse.qualificationScore
             ? Math.max(100, aiResponse.qualificationScore * 10)
             : undefined,

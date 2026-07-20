@@ -235,14 +235,26 @@ export class MetaProvider extends BaseProvider implements IProvider {
    */
   async health(): Promise<HealthCheckResult> {
     const startTime = performance.now();
+    const accessToken = process.env.META_ADS_ACCESS_TOKEN;
+
+    if (!accessToken) {
+      return {
+        status: 'degraded',
+        message: 'Meta Ads não configurado',
+        responseTime: performance.now() - startTime,
+        timestamp: new Date(),
+      };
+    }
 
     try {
       // Testa acesso à API
       const response = await fetch(`${this.META_GRAPH_API}/${this.META_API_VERSION}/me`, {
         headers: {
-          Authorization: 'Bearer test_token_sample',
+          Authorization: `Bearer ${accessToken}`,
         },
       });
+
+      if (!response.ok) throw new Error(`Meta Ads respondeu HTTP ${response.status}`);
 
       const duration = performance.now() - startTime;
 

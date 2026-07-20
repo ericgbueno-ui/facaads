@@ -20,9 +20,7 @@ export async function GET(
   { params }: { params: Promise<{ companyId: string }> }
 ) {
   const authResult = await requireAuth(request);
-  if (authResult.error) {
-    return NextResponse.json({ error: authResult.error }, { status: 401 });
-  }
+  if (authResult.response) return authResult.response;
 
   try {
     const { companyId } = await params;
@@ -61,9 +59,7 @@ export async function POST(
   { params }: { params: Promise<{ companyId: string }> }
 ) {
   const authResult = await requireAuth(request);
-  if (authResult.error) {
-    return NextResponse.json({ error: authResult.error }, { status: 401 });
-  }
+  if (authResult.response) return authResult.response;
 
   try {
     const { companyId } = await params;
@@ -105,17 +101,18 @@ export async function POST(
         companyId,
         type: data.type,
         name: data.name,
-        status: "connected",
+        status: "pending_validation",
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
         config: data.config,
-        connectedAt: new Date(),
+        connectedAt: null,
       },
     });
 
     return NextResponse.json(
       {
         success: true,
+        status: "pending_validation",
         data: integration,
       },
       { status: 201 }
