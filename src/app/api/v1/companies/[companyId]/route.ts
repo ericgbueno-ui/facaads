@@ -39,7 +39,7 @@ export async function GET(
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
-    const companyId = params.companyId;
+    const { companyId } = await params;
 
     // Validar acesso
     const validation = await validateCompanyAccess(session.user.id, companyId);
@@ -106,7 +106,7 @@ export async function PUT(
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
-    const companyId = params.companyId;
+    const { companyId } = await params;
 
     // Validar acesso e role
     const validation = await validateCompanyAccess(session.user.id, companyId);
@@ -169,7 +169,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
 
-    const companyId = params.companyId;
+    const { companyId } = await params;
 
     // Validar acesso e role
     const validation = await validateCompanyAccess(session.user.id, companyId);
