@@ -9,10 +9,7 @@ const SaleInput = z.object({
   companyId: z.string().min(1),
   campaignId: z.string().min(1).nullable(),
   amount: z.coerce.number().positive("Informe um valor de venda maior que zero"),
-  profit: z.coerce.number().min(0, "O lucro não pode ser negativo"),
-  productName: z.string().trim().max(160).optional(),
-  saleDate: z.string().date(),
-  notes: z.string().trim().max(500).optional(),
+  vehicle: z.enum(["SEDAN", "SPIN"], { message: "Selecione Sedan ou Spin" }),
 });
 
 async function hasCompanyAccess(userId: string, companyId: string) {
@@ -67,15 +64,16 @@ export async function POST(req: NextRequest) {
     if (!campaign) return NextResponse.json({ error: "A campanha não pertence ao cliente selecionado" }, { status: 400 });
   }
 
-  const occurredAt = new Date(`${input.saleDate}T12:00:00.000Z`);
+  const occurredAt = new Date();
+  const vehicleName = input.vehicle === "SEDAN" ? "Sedan" : "Spin";
   const sale = await prisma.sale.create({
     data: {
       companyId: input.companyId,
       campaignId: input.campaignId,
       amount: input.amount,
-      profit: input.profit,
-      productName: input.productName || null,
-      notes: input.notes || null,
+      profit: null,
+      productName: vehicleName,
+      notes: null,
       source: "client_report",
       paymentStatus: "completed",
       dataOrigin: "MANUAL",
@@ -94,7 +92,7 @@ export async function POST(req: NextRequest) {
       action: "create",
       resource: "Sale",
       resourceId: sale.id,
-      description: `Venda manual registrada: ${input.amount}`,
+      description: `Venda manual registrada: ${input.amount} · ${vehicleName}`,
     },
   });
 

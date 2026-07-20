@@ -109,10 +109,11 @@ export function DashboardOverview({ initialCompanyId = "" }: { initialCompanyId?
   const [error, setError] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [showSaleForm, setShowSaleForm] = useState(false);
+  const [showSimpleSaleForm, setShowSimpleSaleForm] = useState(false);
   const [savingSale, setSavingSale] = useState(false);
   const [saleError, setSaleError] = useState("");
   const [recentSales, setRecentSales] = useState<ManualSale[]>([]);
-  const [saleForm, setSaleForm] = useState({ campaignId: "", amount: "", profit: "", productName: "", saleDate: new Date().toISOString().slice(0, 10), notes: "" });
+  const [saleForm, setSaleForm] = useState({ campaignId: "", amount: "", vehicle: "" as "" | "SEDAN" | "SPIN", profit: "", productName: "", saleDate: "", notes: "" });
 
   useEffect(() => { setCompanyId(initialCompanyId); }, [initialCompanyId]);
   useEffect(() => {
@@ -156,7 +157,7 @@ export function DashboardOverview({ initialCompanyId = "" }: { initialCompanyId?
   async function openSaleForm() {
     if (!companyId) return;
     setSaleError("");
-    setShowSaleForm(true);
+    setShowSimpleSaleForm(true);
     await loadSales();
   }
 
@@ -164,10 +165,10 @@ export function DashboardOverview({ initialCompanyId = "" }: { initialCompanyId?
     event.preventDefault();
     if (!companyId) return;
     setSavingSale(true); setSaleError("");
-    const response = await fetch("/api/dashboard/sales", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...saleForm, companyId, campaignId: saleForm.campaignId === "unattributed" ? null : saleForm.campaignId }) });
+    const response = await fetch("/api/dashboard/sales", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ companyId, campaignId: saleForm.campaignId === "unattributed" ? null : saleForm.campaignId, amount: saleForm.amount, vehicle: saleForm.vehicle }) });
     const json = await response.json();
     if (!response.ok) { setSaleError(json.error || "Não foi possível registrar a venda"); setSavingSale(false); return; }
-    setSaleForm({ campaignId: "", amount: "", profit: "", productName: "", saleDate: new Date().toISOString().slice(0, 10), notes: "" });
+    setSaleForm({ campaignId: "", amount: "", vehicle: "", profit: "", productName: "", saleDate: "", notes: "" });
     setSavingSale(false); setRefreshKey((value) => value + 1); await loadSales();
   }
 
@@ -221,6 +222,67 @@ export function DashboardOverview({ initialCompanyId = "" }: { initialCompanyId?
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/8 pt-4 text-xs text-slate-500"><span className="flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5" />Última sincronização: {data.summary.lastSyncAt ? new Date(data.summary.lastSyncAt).toLocaleString("pt-BR") : "não registrada"}</span><span className="flex items-center gap-1.5"><Eye className="h-3.5 w-3.5" />Período analisado: {days} dias</span><span className="flex items-center gap-1.5"><ArrowDownUp className="h-3.5 w-3.5" />Ordenação: maior investimento</span></div>
     </>}
+
+    {showSimpleSaleForm && (
+      <div className="fixed inset-0 z-[90] flex items-start justify-center overflow-y-auto bg-slate-950/80 p-4 backdrop-blur-sm sm:p-8">
+        <div className="w-full max-w-4xl rounded-2xl border border-white/10 bg-[#090d1d] shadow-2xl">
+          <div className="flex items-start justify-between border-b border-white/8 px-6 py-5">
+            <div>
+              <h2 className="text-xl font-semibold text-white">Registrar venda confirmada</h2>
+              <p className="mt-1 text-sm text-slate-400">{selected?.name} · informe a campanha, o valor e o veículo.</p>
+            </div>
+            <button type="button" onClick={() => setShowSimpleSaleForm(false)} aria-label="Fechar" className="rounded-lg p-2 text-slate-500 hover:bg-white/5 hover:text-white"><X className="h-5 w-5" /></button>
+          </div>
+          <div className="grid gap-6 p-6 lg:grid-cols-[1fr_0.9fr]">
+            <form onSubmit={saveSale} className="space-y-5">
+              <label className="block text-xs text-slate-400">Campanha que gerou a venda
+                <select required value={saleForm.campaignId} onChange={(event) => setSaleForm({ ...saleForm, campaignId: event.target.value })} className="mt-1 block w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white">
+                  <option value="">Selecione a campanha</option>
+                  {data?.campaignPerformance.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}
+                  <option value="unattributed">Não foi possível identificar a campanha</option>
+                </select>
+              </label>
+              <label className="block text-xs text-slate-400">Valor da venda
+                <input required type="number" min="0.01" step="0.01" value={saleForm.amount} onChange={(event) => setSaleForm({ ...saleForm, amount: event.target.value })} placeholder="Ex.: 550,00" className="mt-1 block w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white" />
+              </label>
+              <fieldset>
+                <legend className="text-xs text-slate-400">Veículo</legend>
+                <div className="mt-2 grid grid-cols-2 gap-3">
+                  {(["SEDAN", "SPIN"] as const).map((vehicle) => (
+                    <label key={vehicle} className={`cursor-pointer rounded-xl border px-4 py-4 text-center text-sm font-semibold transition ${saleForm.vehicle === vehicle ? "border-cyan-400 bg-cyan-400/10 text-cyan-200" : "border-white/10 bg-slate-950 text-slate-400 hover:border-white/20"}`}>
+                      <input required type="radio" name="vehicle" value={vehicle} checked={saleForm.vehicle === vehicle} onChange={() => setSaleForm({ ...saleForm, vehicle })} className="sr-only" />
+                      {vehicle === "SEDAN" ? "Sedan" : "Spin"}
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              {saleError && <p className="rounded-xl border border-red-500/20 bg-red-500/8 p-3 text-sm text-red-300">{saleError}</p>}
+              <button disabled={savingSale} className="w-full rounded-xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-300 disabled:opacity-50">{savingSale ? "Registrando…" : "Confirmar venda"}</button>
+              <p className="text-xs leading-5 text-slate-500">A data é registrada automaticamente. O valor entra na receita e no ROAS; o sistema não presume lucro sem o custo da operação.</p>
+            </form>
+            <div>
+              <h3 className="text-sm font-semibold text-white">Vendas registradas</h3>
+              <div className="mt-3 max-h-[32rem] space-y-2 overflow-y-auto">
+                {recentSales.map((sale) => (
+                  <div key={sale.id} className="rounded-xl border border-white/8 bg-white/[0.03] p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-white">{brl(sale.amount)}</p>
+                        <p className="mt-1 text-xs text-cyan-200">{sale.productName || "Veículo não informado"}</p>
+                        <p className="mt-1 text-xs text-slate-400">{sale.campaign?.name || "Sem campanha"}</p>
+                        <p className="mt-1 text-xs text-slate-600">{new Date(sale.completedAt || sale.createdAt).toLocaleDateString("pt-BR")}</p>
+                      </div>
+                      {sale.dataOrigin === "MANUAL" && <button type="button" onClick={() => deleteSale(sale.id)} title="Excluir venda" className="rounded-lg p-2 text-slate-600 hover:bg-red-500/10 hover:text-red-300"><Trash2 className="h-4 w-4" /></button>}
+                    </div>
+                  </div>
+                ))}
+                {recentSales.length === 0 && <p className="rounded-xl border border-dashed border-white/10 p-5 text-center text-sm text-slate-500">Nenhuma venda manual registrada.</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
 
     {showSaleForm && <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-slate-950/80 p-4 backdrop-blur-sm sm:p-8"><div className="w-full max-w-4xl rounded-2xl border border-white/10 bg-[#090d1d] shadow-2xl"><div className="flex items-start justify-between border-b border-white/8 px-6 py-5"><div><h2 className="text-xl font-semibold text-white">Registrar venda confirmada</h2><p className="mt-1 text-sm text-slate-400">{selected?.name} · vincule à campanha para calcular CPA, ROAS e lucro.</p></div><button type="button" onClick={() => setShowSaleForm(false)} className="rounded-lg p-2 text-slate-500 hover:bg-white/5 hover:text-white"><X className="h-5 w-5" /></button></div><div className="grid gap-6 p-6 lg:grid-cols-[1fr_0.9fr]"><form onSubmit={saveSale} className="space-y-4"><label className="block text-xs text-slate-400">Campanha que gerou a venda<select required value={saleForm.campaignId} onChange={(event) => setSaleForm({ ...saleForm, campaignId: event.target.value })} className="mt-1 block w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white"><option value="">Selecione a campanha</option>{data?.campaignPerformance.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}<option value="unattributed">Não foi possível identificar a campanha</option></select></label><div className="grid gap-4 sm:grid-cols-2"><label className="text-xs text-slate-400">Valor total recebido<input required type="number" min="0.01" step="0.01" value={saleForm.amount} onChange={(event) => setSaleForm({ ...saleForm, amount: event.target.value })} placeholder="Ex.: 850,00" className="mt-1 block w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white" /></label><label className="text-xs text-slate-400">Lucro antes dos anúncios<input required type="number" min="0" step="0.01" value={saleForm.profit} onChange={(event) => setSaleForm({ ...saleForm, profit: event.target.value })} placeholder="Receita menos custos do serviço" className="mt-1 block w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white" /></label></div><div className="grid gap-4 sm:grid-cols-2"><label className="text-xs text-slate-400">Produto ou serviço<input value={saleForm.productName} onChange={(event) => setSaleForm({ ...saleForm, productName: event.target.value })} placeholder="Ex.: Transfer ida e volta" className="mt-1 block w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white" /></label><label className="text-xs text-slate-400">Data da venda<input required type="date" value={saleForm.saleDate} onChange={(event) => setSaleForm({ ...saleForm, saleDate: event.target.value })} className="mt-1 block w-full rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white" /></label></div><label className="block text-xs text-slate-400">Observação<textarea value={saleForm.notes} onChange={(event) => setSaleForm({ ...saleForm, notes: event.target.value })} rows={3} placeholder="Informação opcional para conferência" className="mt-1 block w-full resize-none rounded-xl border border-white/10 bg-slate-950 px-3 py-3 text-sm text-white" /></label>{saleError && <p className="rounded-xl border border-red-500/20 bg-red-500/8 p-3 text-sm text-red-300">{saleError}</p>}<button disabled={savingSale} className="w-full rounded-xl bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-300 disabled:opacity-50">{savingSale ? "Registrando…" : "Confirmar venda"}</button><p className="text-xs leading-5 text-slate-500">Lucro antes dos anúncios = valor recebido menos custo do produto, comissão, veículo, fornecedor ou operação. O Hergel desconta o investimento em mídia depois.</p></form><div><h3 className="text-sm font-semibold text-white">Vendas registradas</h3><div className="mt-3 max-h-[32rem] space-y-2 overflow-y-auto">{recentSales.map((sale) => <div key={sale.id} className="rounded-xl border border-white/8 bg-white/[0.03] p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-semibold text-white">{brl(sale.amount)}</p><p className="mt-1 text-xs text-slate-400">{sale.campaign?.name || "Sem campanha"}</p><p className="mt-1 text-xs text-slate-600">{new Date(sale.completedAt || sale.createdAt).toLocaleDateString("pt-BR")} · lucro informado {sale.profit === null ? "—" : brl(sale.profit)}</p></div><button type="button" onClick={() => deleteSale(sale.id)} title="Excluir venda" className="rounded-lg p-2 text-slate-600 hover:bg-red-500/10 hover:text-red-300"><Trash2 className="h-4 w-4" /></button></div></div>)}{recentSales.length === 0 && <p className="rounded-xl border border-dashed border-white/10 p-5 text-center text-sm text-slate-500">Nenhuma venda manual registrada.</p>}</div></div></div></div></div>}
   </main>;
