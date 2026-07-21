@@ -97,6 +97,10 @@ function Kpi({ label, value, detail, icon: Icon }: { label: string; value: strin
   return <div className="rounded-2xl border border-white/8 bg-white/[0.035] p-5"><div className="flex items-center justify-between"><span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</span><Icon className="h-4 w-4 text-cyan-300" /></div><p className="mt-4 text-2xl font-semibold text-white">{value}</p><p className="mt-1 text-xs text-slate-500">{detail}</p></div>;
 }
 
+function MetricExplanation({ term, value, children }: { term: string; value: string; children: React.ReactNode }) {
+  return <article className="rounded-xl border border-white/8 bg-slate-950/45 p-4"><div className="flex items-start justify-between gap-3"><h3 className="text-sm font-semibold text-white">{term}</h3><span className="shrink-0 rounded-md bg-cyan-400/10 px-2 py-1 text-xs font-semibold text-cyan-200">{value}</span></div><p className="mt-3 text-sm leading-6 text-slate-400">{children}</p></article>;
+}
+
 export function DashboardOverview({ initialCompanyId = "" }: { initialCompanyId?: string }) {
   const [companyId, setCompanyId] = useState(initialCompanyId);
   const [days, setDays] = useState(30);
@@ -221,6 +225,30 @@ export function DashboardOverview({ initialCompanyId = "" }: { initialCompanyId?
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{["META", "GOOGLE", "TIKTOK", "SHOPEE"].map((item) => { const values = data.channels.find((entry) => entry.channel === item); return <div key={item} className="rounded-2xl border border-white/8 bg-white/[0.03] p-5"><div className="flex items-center justify-between"><h3 className="font-semibold text-white">{channelLabel[item]}</h3><span className={`h-2.5 w-2.5 rounded-full ${values ? "bg-emerald-400" : "bg-slate-700"}`} /></div>{values ? <div className="mt-4 space-y-1 text-sm text-slate-400"><p className="text-xl font-semibold text-white">{brl(values.spend)}</p><p>{num(values.clicks)} cliques · CTR {dec(values.ctr)}%</p></div> : <p className="mt-4 text-sm text-slate-500">Sem dados sincronizados.</p>}</div>; })}</section>
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-white/8 pt-4 text-xs text-slate-500"><span className="flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5" />Última sincronização: {data.summary.lastSyncAt ? new Date(data.summary.lastSyncAt).toLocaleString("pt-BR") : "não registrada"}</span><span className="flex items-center gap-1.5"><Eye className="h-3.5 w-3.5" />Período analisado: {days} dias</span><span className="flex items-center gap-1.5"><ArrowDownUp className="h-3.5 w-3.5" />Ordenação: maior investimento</span></div>
+
+      <section className="rounded-2xl border border-cyan-400/15 bg-cyan-400/[0.035] p-5 sm:p-6">
+        <div className="max-w-3xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">Entenda os números</p>
+          <h2 className="mt-2 text-xl font-semibold text-white">O que estas métricas significam na prática</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-400">Os exemplos abaixo usam os dados de <strong className="font-medium text-slate-200">{selected?.name || "todos os clientes"}</strong> no período selecionado. Assim, o painel explica o número que está mostrando, não apenas a sigla.</p>
+        </div>
+        <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <MetricExplanation term="Investimento em mídia" value={brl(data.summary.spend)}>É quanto foi gasto nos anúncios durante estes {days} dias. Não inclui combustível, veículo, equipe ou outros custos da operação.</MetricExplanation>
+          <MetricExplanation term="Impressões" value={num(data.summary.impressions)}>Quantidade de vezes que os anúncios apareceram. Uma mesma pessoa pode gerar mais de uma impressão.</MetricExplanation>
+          <MetricExplanation term="Cliques" value={num(data.summary.clicks)}>Quantidade de cliques recebidos. Clique demonstra interesse, mas não significa que houve uma venda.</MetricExplanation>
+          <MetricExplanation term="CTR — taxa de cliques" value={dec(data.summary.ctr) + "%"}>De cada 100 exibições, aproximadamente {dec(data.summary.ctr)} geraram clique. É calculado por cliques ÷ impressões × 100.</MetricExplanation>
+          <MetricExplanation term="CPC — custo por clique" value={data.summary.clicks ? brl(data.summary.spend / data.summary.clicks) : "—"}>{data.summary.clicks ? "Cada clique custou, em média, " + brl(data.summary.spend / data.summary.clicks) + ". É investimento ÷ cliques." : "Ainda não há cliques suficientes para calcular o custo médio."}</MetricExplanation>
+          <MetricExplanation term="Vendas confirmadas" value={num(data.summary.sales)}>São vendas reais informadas por você. Conversas, leads ou resultados registrados pela plataforma não entram aqui como venda.</MetricExplanation>
+          <MetricExplanation term="Receita confirmada" value={brl(data.summary.revenue)}>É a soma do valor das vendas registradas. Receita é faturamento; ainda não é lucro.</MetricExplanation>
+          <MetricExplanation term="ROAS — retorno sobre anúncios" value={data.summary.roas === null ? "—" : dec(data.summary.roas) + "x"}>{data.summary.roas === null ? "Sem receita confirmada ou investimento suficiente para calcular." : "Cada R$ 1,00 investido em anúncios gerou " + brl(data.summary.roas) + " em vendas confirmadas. Neste período, " + brl(data.summary.spend) + " em mídia geraram " + brl(data.summary.revenue) + " em receita."}</MetricExplanation>
+          <MetricExplanation term="ROI — retorno sobre o investimento" value="Não calculado">ROI considera o lucro depois de todos os custos, não apenas os anúncios. Como o custo operacional da venda não foi informado, o Hergel não chama o ROAS de lucro nem inventa um ROI.</MetricExplanation>
+          <MetricExplanation term="Resultados da plataforma" value={num(data.campaignPerformance.reduce((total, campaign) => total + campaign.platformConversions, 0))}>São ações atribuídas pela plataforma, como mensagens ou leads. Servem para avaliar o anúncio, mas não são tratadas automaticamente como vendas.</MetricExplanation>
+          <MetricExplanation term="Custo por resultado" value={data.campaignPerformance.reduce((total, campaign) => total + campaign.platformConversions, 0) ? brl(data.summary.spend / data.campaignPerformance.reduce((total, campaign) => total + campaign.platformConversions, 0)) : "—"}>É o investimento dividido pelos resultados atribuídos pela plataforma. Avalia a eficiência da mídia, mas não substitui o CPA de uma venda real.</MetricExplanation>
+          <MetricExplanation term="CPA — custo por venda" value={data.summary.sales ? brl(data.summary.spend / data.summary.sales) : "—"}>{data.summary.sales ? "Foram gastos, em média, " + brl(data.summary.spend / data.summary.sales) + " em anúncios para cada venda confirmada. Quando a venda não está ligada a uma campanha, ela não altera o CPA daquela campanha." : "Sem vendas confirmadas não existe CPA de venda confiável."}</MetricExplanation>
+          <MetricExplanation term="Lucro após mídia" value={data.summary.netProfit === null ? "—" : brl(data.summary.netProfit)}>{data.summary.profitKnown ? "É o lucro informado nas vendas menos o investimento em anúncios." : "Ainda não pode ser calculado porque faltam os custos da operação. O painel mantém o campo vazio para não apresentar margem falsa."}</MetricExplanation>
+          <MetricExplanation term="Decisão recomendada" value="Pausar, manter ou escalar">É a orientação calculada por campanha com base em vendas, ROAS, custo por resultado, metas informadas e volume de dados. Sem meta ou amostra suficiente, o sistema pede mais dados em vez de adivinhar.</MetricExplanation>
+        </div>
+      </section>
     </>}
 
     {showSimpleSaleForm && (
